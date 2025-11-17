@@ -1,6 +1,10 @@
-# Docker Images
+# Devcontainer Images
 
 This repository contains Dockerfiles for custom Docker images hosted on GitHub Container Registry (ghcr.io).
+
+## 📚 Image Documentation
+
+- **[devcontainer-hugo-bun](./devcontainer-hugo-bun/README.md)** - Hugo Extended + Bun development container
 
 ## Repository Structure
 
