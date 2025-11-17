@@ -4,13 +4,6 @@ ARG BUN_VERSION=1.3.2
 
 FROM oven/bun:${BUN_VERSION}-alpine
 
-# OCI labels for container metadata and GitHub Package integration
-LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainer-images"
-LABEL org.opencontainers.image.description="Hugo Extended + Bun development container - multiplatform image for modern static site development"
-LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.title="devcontainer-hugo-bun"
-LABEL org.opencontainers.image.url="https://github.com/gatezh/devcontainer-images"
-
 # ℹ️ Same version is used in GitHub Actions deployment (.github/workflows/deploy.yml)
 # ⚠️ Remember to update GitHub Actions workflow if changing it here
 ARG HUGO_VERSION=0.152.2
@@ -39,3 +32,10 @@ RUN set -eux; \
     tar -xzf hugo.tar.gz -C /usr/local/bin/ hugo; \
     rm hugo.tar.gz; \
     hugo version
+
+# OCI labels for container metadata and GitHub Package integration
+LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainer-images"
+LABEL org.opencontainers.image.description="Hugo Extended + Bun development container - multiplatform image for modern static site development"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.title="devcontainer-hugo-bun"
+LABEL org.opencontainers.image.url="https://github.com/gatezh/devcontainer-images"
