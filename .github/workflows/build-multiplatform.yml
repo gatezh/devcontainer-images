@@ -2,6 +2,8 @@ name: Build devcontainer-hugo-bun
 
 on:
   push:
+    branches:
+      - master
     paths:
       - 'devcontainer-hugo-bun/.devcontainer/Dockerfile'
   workflow_dispatch:

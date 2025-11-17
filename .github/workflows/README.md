@@ -9,7 +9,7 @@ Automatically builds and pushes multiplatform Docker images for `devcontainer-hu
 ### Triggers
 
 The workflow runs when:
-- **Any push** that changes `devcontainer-hugo-bun/.devcontainer/Dockerfile`
+- **Push to master branch** that changes `devcontainer-hugo-bun/.devcontainer/Dockerfile`
 - **Manual trigger** via Actions tab → "Build devcontainer-hugo-bun" → Run workflow
 
 ### What It Does
@@ -34,7 +34,7 @@ The workflow runs when:
 
 ### Automatic Build
 
-Just update the Dockerfile and push:
+Update the Dockerfile and merge to master:
 
 ```bash
 # Edit devcontainer-hugo-bun/.devcontainer/Dockerfile
@@ -42,7 +42,7 @@ Just update the Dockerfile and push:
 
 git add devcontainer-hugo-bun/.devcontainer/Dockerfile
 git commit -m "Update Hugo to 0.153.0"
-git push
+git push origin master
 ```
 
 The workflow automatically builds and tags as `hugo0.153.0-bun1.3.2-alpine`.
