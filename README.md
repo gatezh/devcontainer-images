@@ -1,4 +1,4 @@
-# Docker Images
+# Devcontainer Images
 
 This repository contains Dockerfiles for custom Docker images hosted on GitHub Container Registry (ghcr.io).
 
