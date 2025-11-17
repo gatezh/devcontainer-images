@@ -1,0 +1,41 @@
+# Docker Images
+
+This repository contains Dockerfiles for custom Docker images hosted on GitHub Container Registry (ghcr.io).
+
+## Repository Structure
+
+Each subdirectory represents a Docker image project with the following structure:
+
+```
+image-name/
+├── .devcontainer/
+│   ├── Dockerfile          # Source of truth for the image
+│   └── devcontainer.json   # Dev container configuration (uses "build")
+└── ...
+```
+
+## Available Images
+
+### devcontainer-hugo-bun
+
+Hugo development container with Bun runtime.
+
+**Usage in other projects:**
+
+```json
+{
+  "image": "ghcr.io/<username>/devcontainer-hugo-bun:latest"
+}
+```
+
+## Adding a New Image
+
+1. Create a new directory with your image name
+2. Add `.devcontainer/Dockerfile` with your image definition
+3. Add `.devcontainer/devcontainer.json` that references the Dockerfile
+4. Build and push the image to GitHub Container Registry
+5. Update this README with usage instructions
+
+## Building and Publishing
+
+Images from this repository are built and published to GitHub Container Registry. Other projects can reference these images in their `devcontainer.json` files using the `"image"` property.
