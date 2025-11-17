@@ -1,2 +1,34 @@
-# Dockerfile for Hugo + Bun Dev Container
-# This will be populated with the actual Dockerfile content
+# ℹ️ Same version is used in GitHub Actions deployment (.github/workflows/deploy.yml)
+# ⚠️ Remember to update GitHub Actions workflow if changing it here
+ARG BUN_VERSION=1.3.2
+
+FROM oven/bun:${BUN_VERSION}-alpine
+
+# ℹ️ Same version is used in GitHub Actions deployment (.github/workflows/deploy.yml)
+# ⚠️ Remember to update GitHub Actions workflow if changing it here
+ARG HUGO_VERSION=0.152.2
+
+# Platform architecture (automatically set by Docker based on build platform)
+ARG TARGETARCH
+
+# Install dependencies:
+# - ca-certificates: Required for HTTPS connections
+# - gcompat: glibc compatibility layer required for Hugo Extended binary (Alpine uses musl)
+# - git: Version control
+# - go: Required for Hugo Modules to download and manage dependencies (e.g., PaperMod theme)
+# - wget: Required to download Hugo Extended binary
+# - zsh: Better shell for development (VS Code shell integration, modern features)
+RUN apk add --no-cache \
+    ca-certificates \
+    git \
+    gcompat \
+    go \
+    wget \
+    zsh
+
+# Install Hugo Extended
+RUN set -eux; \
+    wget -O hugo.tar.gz "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz"; \
+    tar -xzf hugo.tar.gz -C /usr/local/bin/ hugo; \
+    rm hugo.tar.gz; \
+    hugo version
