@@ -1,0 +1,225 @@
+name: Build and Push Multiplatform Images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '*/.devcontainer/Dockerfile'
+      - '**/Dockerfile'
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: 'Image directory name (e.g., devcontainer-hugo-bun)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  # Convert repository owner to lowercase for GHCR compatibility
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed images
+        id: set-matrix
+        run: |
+          # For workflow_dispatch, use the provided image name
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            IMAGE_NAME="${{ inputs.image_name }}"
+            echo "Manual trigger for image: $IMAGE_NAME"
+            echo "matrix={\"image\":\"$IMAGE_NAME\"}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # For push events, detect which Dockerfiles changed
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Find directories containing changed Dockerfiles
+          CHANGED_IMAGES=$(echo "$CHANGED_FILES" | grep -E '/.devcontainer/Dockerfile$|/Dockerfile$' | cut -d'/' -f1 | sort -u || true)
+
+          if [ -z "$CHANGED_IMAGES" ]; then
+            echo "No Dockerfile changes detected"
+            echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Build JSON array for matrix
+          MATRIX_JSON=$(echo "$CHANGED_IMAGES" | jq -R -s -c 'split("\n") | map(select(length > 0)) | map({"image": .})')
+          echo "matrix={\"include\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
+          echo "Detected changed images: $CHANGED_IMAGES"
+
+  build-and-push:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.matrix != '{"include":[]}'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find Dockerfile location
+        id: dockerfile
+        run: |
+          IMAGE_DIR="${{ matrix.image }}"
+
+          # Check common Dockerfile locations
+          if [ -f "$IMAGE_DIR/.devcontainer/Dockerfile" ]; then
+            DOCKERFILE_PATH="$IMAGE_DIR/.devcontainer/Dockerfile"
+            BUILD_CONTEXT="$IMAGE_DIR/.devcontainer"
+          elif [ -f "$IMAGE_DIR/Dockerfile" ]; then
+            DOCKERFILE_PATH="$IMAGE_DIR/Dockerfile"
+            BUILD_CONTEXT="$IMAGE_DIR"
+          else
+            echo "ERROR: No Dockerfile found for $IMAGE_DIR"
+            exit 1
+          fi
+
+          echo "dockerfile=$DOCKERFILE_PATH" >> $GITHUB_OUTPUT
+          echo "context=$BUILD_CONTEXT" >> $GITHUB_OUTPUT
+          echo "Found Dockerfile at: $DOCKERFILE_PATH"
+
+      - name: Extract versions from Dockerfile
+        id: versions
+        run: |
+          DOCKERFILE="${{ steps.dockerfile.outputs.dockerfile }}"
+
+          # Extract all ARG declarations with default values
+          echo "Extracting ARG versions from $DOCKERFILE:"
+          cat "$DOCKERFILE" | grep -E '^ARG [A-Z_]+=' || true
+
+          # Parse ARG values into environment variables
+          while IFS= read -r line; do
+            # Extract ARG NAME=VALUE
+            if [[ $line =~ ^ARG[[:space:]]+([A-Z_]+)=(.+)$ ]]; then
+              ARG_NAME="${BASH_REMATCH[1]}"
+              ARG_VALUE="${BASH_REMATCH[2]}"
+              echo "$ARG_NAME=$ARG_VALUE" >> $GITHUB_OUTPUT
+              echo "  $ARG_NAME=$ARG_VALUE"
+            fi
+          done < <(grep -E '^ARG [A-Z_]+=' "$DOCKERFILE")
+
+      - name: Generate image tags
+        id: tags
+        run: |
+          IMAGE_NAME="${{ matrix.image }}"
+          REGISTRY="${{ env.REGISTRY }}"
+          NAMESPACE=$(echo "${{ env.IMAGE_NAMESPACE }}" | tr '[:upper:]' '[:lower:]')
+
+          # Base image name
+          BASE_IMAGE="$REGISTRY/$NAMESPACE/$IMAGE_NAME"
+
+          # Always include 'latest' tag
+          TAGS="$BASE_IMAGE:latest"
+
+          # Build version-specific tag based on ARG versions
+          # This is image-specific logic - customize per image
+
+          case "$IMAGE_NAME" in
+            devcontainer-hugo-bun)
+              HUGO_VERSION="${{ steps.versions.outputs.HUGO_VERSION }}"
+              BUN_VERSION="${{ steps.versions.outputs.BUN_VERSION }}"
+
+              if [ -n "$HUGO_VERSION" ] && [ -n "$BUN_VERSION" ]; then
+                VERSION_TAG="hugo${HUGO_VERSION}-bun${BUN_VERSION}-alpine"
+                TAGS="$TAGS,$BASE_IMAGE:$VERSION_TAG"
+                echo "Generated version tag: $VERSION_TAG"
+              fi
+              ;;
+            *)
+              # For other images, create a generic version tag from all *_VERSION args
+              # Read the versions output file and build version string
+              VERSION_PARTS=""
+
+              # Try common version patterns (add more as needed)
+              for VERSION_VAR in NODE_VERSION PYTHON_VERSION GO_VERSION RUST_VERSION JAVA_VERSION PHP_VERSION; do
+                VERSION_VALUE="${!VERSION_VAR:-}"
+                if [ -z "$VERSION_VALUE" ]; then
+                  # Try to get from GitHub outputs
+                  VERSION_VALUE=$(echo "${{ toJson(steps.versions.outputs) }}" | jq -r ".${VERSION_VAR} // empty")
+                fi
+
+                if [ -n "$VERSION_VALUE" ] && [ "$VERSION_VALUE" != "null" ]; then
+                  TOOL_NAME=$(echo "$VERSION_VAR" | sed 's/_VERSION$//' | tr '[:upper:]' '[:lower:]')
+                  VERSION_PARTS="${VERSION_PARTS}${TOOL_NAME}${VERSION_VALUE}-"
+                fi
+              done
+
+              # Remove trailing dash
+              if [ -n "$VERSION_PARTS" ]; then
+                VERSION_TAG="${VERSION_PARTS%-}"
+                TAGS="$TAGS,$BASE_IMAGE:$VERSION_TAG"
+                echo "Generated generic version tag: $VERSION_TAG"
+              else
+                echo "No version ARGs found for generic tagging"
+              fi
+              ;;
+          esac
+
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "Generated tags:"
+          echo "$TAGS" | tr ',' '\n'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ steps.dockerfile.outputs.context }}
+          file: ${{ steps.dockerfile.outputs.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify image
+        run: |
+          TAGS="${{ steps.tags.outputs.tags }}"
+          FIRST_TAG=$(echo "$TAGS" | cut -d',' -f1)
+
+          echo "Verifying image: $FIRST_TAG"
+          docker pull --platform linux/amd64 "$FIRST_TAG"
+          docker pull --platform linux/arm64 "$FIRST_TAG"
+
+          echo "✅ Multiplatform image successfully pushed and verified!"
+          echo "Available at: $FIRST_TAG"
