@@ -55,9 +55,24 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u <USERNAME> --password-stdin
 
 ### In Your Project's devcontainer.json
 
+When using this pre-built image, replace the `dockerFile` property with the `image` property:
+
 ```json
 {
   "name": "My Hugo Project",
+  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun:latest"
+}
+```
+
+**Note:** If you were previously using a local Dockerfile, change from:
+```json
+{
+  "dockerFile": "Dockerfile"
+}
+```
+to:
+```json
+{
   "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun:latest"
 }
 ```
