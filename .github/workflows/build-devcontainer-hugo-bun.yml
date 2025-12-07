@@ -52,6 +52,7 @@ jobs:
 
           TAGS="${BASE_IMAGE}:latest,${BASE_IMAGE}:${VERSION_TAG}"
 
+          echo "namespace=$NAMESPACE" >> $GITHUB_OUTPUT
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
           echo "Generated tags:"
           echo "$TAGS" | tr ',' '\n'
@@ -73,7 +74,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.tags.outputs.namespace }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
