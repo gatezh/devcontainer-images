@@ -1,11 +1,7 @@
-# ℹ️ Same version is used in GitHub Actions deployment (.github/workflows/deploy.yml)
-# ⚠️ Remember to update GitHub Actions workflow if changing it here
 ARG BUN_VERSION=1.3.2
 
 FROM oven/bun:${BUN_VERSION}-alpine
 
-# ℹ️ Same version is used in GitHub Actions deployment (.github/workflows/deploy.yml)
-# ⚠️ Remember to update GitHub Actions workflow if changing it here
 ARG HUGO_VERSION=0.152.2
 
 # Platform architecture (automatically set by Docker based on build platform)
