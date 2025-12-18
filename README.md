@@ -4,6 +4,7 @@ This repository contains Dockerfiles for custom Docker images hosted on GitHub C
 
 ## 📚 Image Documentation
 
+- **[devcontainer-bun](./devcontainer-bun/README.md)** - Bun development container
 - **[devcontainer-hugo-bun](./devcontainer-hugo-bun/README.md)** - Hugo Extended + Bun development container
 
 ## Repository Structure
@@ -19,6 +20,18 @@ image-name/
 ```
 
 ## Available Images
+
+### devcontainer-bun
+
+Bun development container for modern JavaScript/TypeScript development.
+
+**Usage in other projects:**
+
+```json
+{
+  "image": "ghcr.io/<username>/devcontainer-bun:latest"
+}
+```
 
 ### devcontainer-hugo-bun
 
