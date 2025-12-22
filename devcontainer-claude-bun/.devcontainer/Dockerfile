@@ -63,7 +63,8 @@ RUN ARCH=$(dpkg --print-architecture) && \
 # Set up non-root user
 USER bun
 
-# Ensure bun global installs land in the user home
+# Ensure bun uses the correct home and global install path
+ENV HOME=/home/bun
 ENV BUN_INSTALL=/home/bun/.bun
 ENV PATH="$BUN_INSTALL/bin:$PATH"
 
