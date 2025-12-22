@@ -1,4 +1,4 @@
-# devcontainer-claude
+# devcontainer-claude-bun
 
 Claude Code development container based on the [official Anthropic devcontainer configuration](https://github.com/anthropics/claude-code/tree/main/.devcontainer), using Bun as the JavaScript runtime.
 
@@ -20,7 +20,7 @@ Add to your project's `.devcontainer/devcontainer.json`:
 
 ```json
 {
-  "image": "ghcr.io/gatezh/devcontainer-claude:latest",
+  "image": "ghcr.io/gatezh/devcontainer-claude-bun:latest",
   "runArgs": [
     "--cap-add=NET_ADMIN",
     "--cap-add=NET_RAW"
@@ -74,8 +74,8 @@ When executed with `--dangerously-skip-permissions`, devcontainers do **not prev
 
 ## Image Tags
 
-- `ghcr.io/gatezh/devcontainer-claude:latest` - Latest build
-- `ghcr.io/gatezh/devcontainer-claude:bun1.3.5-slim` - Bun version specific tag
+- `ghcr.io/gatezh/devcontainer-claude-bun:latest` - Latest build
+- `ghcr.io/gatezh/devcontainer-claude-bun:bun1.3.5-slim` - Bun version specific tag
 
 ## Customization
 

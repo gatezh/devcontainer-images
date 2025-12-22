@@ -94,5 +94,5 @@ USER bun
 LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainer-images"
 LABEL org.opencontainers.image.description="Claude Code development container - Bun environment with Claude Code CLI, firewall sandbox, and zsh"
 LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.title="devcontainer-claude"
+LABEL org.opencontainers.image.title="devcontainer-claude-bun"
 LABEL org.opencontainers.image.url="https://github.com/gatezh/devcontainer-images"

@@ -29,7 +29,7 @@ repository-root/
 
 ### Image Names
 - Format: `devcontainer-{primary-tool}` or `devcontainer-{primary-tool}-{secondary-tool}`
-- Examples: `devcontainer-bun`, `devcontainer-hugo-bun`, `devcontainer-claude`
+- Examples: `devcontainer-bun`, `devcontainer-hugo-bun`, `devcontainer-claude-bun`
 
 ### Version ARGs in Dockerfile
 - Place at the top of Dockerfile
@@ -47,7 +47,7 @@ repository-root/
 - Examples:
   - `ghcr.io/owner/devcontainer-bun:latest`
   - `ghcr.io/owner/devcontainer-bun:bun1.3.5-alpine`
-  - `ghcr.io/owner/devcontainer-claude:bun1.3.5-slim`
+  - `ghcr.io/owner/devcontainer-claude-bun:bun1.3.5-slim`
 
 ## Dockerfile Patterns
 
