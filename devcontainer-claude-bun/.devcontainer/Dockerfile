@@ -84,8 +84,11 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   -x
 
-# Install Claude Code globally using bun
-RUN bun add -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+# Install Claude Code globally using bun (run as root to avoid EACCES linking)
+USER root
+RUN BUN_INSTALL=/home/bun/.bun HOME=/home/bun bun add -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} && \
+  chown -R bun:bun /home/bun/.bun
+USER bun
 
 # Copy and set up firewall script
 COPY init-firewall.sh /usr/local/bin/
