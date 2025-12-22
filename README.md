@@ -5,6 +5,7 @@ This repository contains Dockerfiles for custom Docker images hosted on GitHub C
 ## 📚 Image Documentation
 
 - **[devcontainer-bun](./devcontainer-bun/README.md)** - Bun development container
+- **[devcontainer-claude-bun](./devcontainer-claude-bun/README.md)** - Claude Code development container with firewall sandbox
 - **[devcontainer-hugo-bun](./devcontainer-hugo-bun/README.md)** - Hugo Extended + Bun development container
 
 ## Repository Structure
@@ -30,6 +31,20 @@ Bun development container for modern JavaScript/TypeScript development.
 ```json
 {
   "image": "ghcr.io/<username>/devcontainer-bun:latest"
+}
+```
+
+### devcontainer-claude-bun
+
+Claude Code development container with Bun runtime, Claude Code CLI, and a restrictive firewall sandbox.
+
+**Usage in other projects:**
+
+```json
+{
+  "image": "ghcr.io/<username>/devcontainer-claude-bun:latest",
+  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh"
 }
 ```
 
