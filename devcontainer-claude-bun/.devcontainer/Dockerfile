@@ -50,8 +50,8 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 ENV DEVCONTAINER=true
 
 # Create workspace and config directories and set permissions
-RUN mkdir -p /workspace /home/bun/.claude && \
-  chown -R bun:bun /workspace /home/bun/.claude
+RUN mkdir -p /workspace /home/bun/.claude /home/bun/.bun && \
+  chown -R bun:bun /workspace /home/bun/.claude /home/bun/.bun
 
 WORKDIR /workspace
 
@@ -62,6 +62,10 @@ RUN ARCH=$(dpkg --print-architecture) && \
 
 # Set up non-root user
 USER bun
+
+# Ensure bun global installs land in the user home
+ENV BUN_INSTALL=/home/bun/.bun
+ENV PATH="$BUN_INSTALL/bin:$PATH"
 
 # Set the default shell to zsh rather than sh
 ENV SHELL=/bin/zsh
