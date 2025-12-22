@@ -1,6 +1,6 @@
-ARG NODE_VERSION=20
+ARG BUN_VERSION=1.3.5
 
-FROM node:${NODE_VERSION}
+FROM oven/bun:${BUN_VERSION}-slim
 
 ARG TZ=UTC
 ENV TZ="$TZ"
@@ -11,6 +11,9 @@ ARG ZSH_IN_DOCKER_VERSION=1.2.0
 
 # Install basic development tools and iptables/ipset
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  wget \
+  curl \
   less \
   git \
   procps \
@@ -31,13 +34,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   vim \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Ensure default node user has access to /usr/local/share
-RUN mkdir -p /usr/local/share/npm-global && \
-  chown -R node:node /usr/local/share
+# Ensure default bun user has access to /usr/local/share
+RUN mkdir -p /usr/local/share/bun-global && \
+  chown -R bun:bun /usr/local/share
 
-ARG USERNAME=node
+ARG USERNAME=bun
 
-# Persist bash history.
+# Persist bash history
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   && mkdir /commandhistory \
   && touch /commandhistory/.bash_history \
@@ -47,22 +50,18 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 ENV DEVCONTAINER=true
 
 # Create workspace and config directories and set permissions
-RUN mkdir -p /workspace /home/node/.claude && \
-  chown -R node:node /workspace /home/node/.claude
+RUN mkdir -p /workspace /home/bun/.claude && \
+  chown -R bun:bun /workspace /home/bun/.claude
 
 WORKDIR /workspace
 
 RUN ARCH=$(dpkg --print-architecture) && \
   wget "https://github.com/dandavison/delta/releases/download/${GIT_DELTA_VERSION}/git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
-  sudo dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
+  dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
 # Set up non-root user
-USER node
-
-# Install global packages
-ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
-ENV PATH=$PATH:/usr/local/share/npm-global/bin
+USER bun
 
 # Set the default shell to zsh rather than sh
 ENV SHELL=/bin/zsh
@@ -80,20 +79,20 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   -x
 
-# Install Claude
-RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+# Install Claude Code globally using bun
+RUN bun add -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # Copy and set up firewall script
 COPY init-firewall.sh /usr/local/bin/
 USER root
 RUN chmod +x /usr/local/bin/init-firewall.sh && \
-  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
-  chmod 0440 /etc/sudoers.d/node-firewall
-USER node
+  echo "bun ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/bun-firewall && \
+  chmod 0440 /etc/sudoers.d/bun-firewall
+USER bun
 
 # OCI labels for container metadata and GitHub Package integration
 LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainer-images"
-LABEL org.opencontainers.image.description="Claude Code development container - Node.js environment with Claude Code CLI, firewall sandbox, and zsh"
+LABEL org.opencontainers.image.description="Claude Code development container - Bun environment with Claude Code CLI, firewall sandbox, and zsh"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.title="devcontainer-claude"
 LABEL org.opencontainers.image.url="https://github.com/gatezh/devcontainer-images"

@@ -36,7 +36,7 @@ Bun development container for modern JavaScript/TypeScript development.
 
 ### devcontainer-claude
 
-Claude Code development container with Node.js 20, Claude Code CLI, and a restrictive firewall sandbox.
+Claude Code development container with Bun runtime, Claude Code CLI, and a restrictive firewall sandbox.
 
 **Usage in other projects:**
 

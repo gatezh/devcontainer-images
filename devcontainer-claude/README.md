@@ -1,14 +1,14 @@
 # devcontainer-claude
 
-Claude Code development container based on the [official Anthropic devcontainer configuration](https://github.com/anthropics/claude-code/tree/main/.devcontainer).
+Claude Code development container based on the [official Anthropic devcontainer configuration](https://github.com/anthropics/claude-code/tree/main/.devcontainer), using Bun as the JavaScript runtime.
 
 ## Features
 
-- **Node.js 20** with essential development dependencies
-- **Claude Code CLI** pre-installed globally
+- **Bun runtime** (slim Debian-based image) for fast JavaScript/TypeScript execution
+- **Claude Code CLI** pre-installed globally via `bun add -g`
 - **Security by design** with custom firewall restricting network access to necessary services only
 - **Developer-friendly tools**: git, ZSH with Powerline10k theme, fzf, vim, nano, git-delta
-- **VS Code integration** with pre-configured extensions (Claude Code, ESLint, Prettier, GitLens)
+- **VS Code integration** with pre-configured extensions (Claude Code, Bun, Biome, Tailwind CSS)
 - **Session persistence** for command history and Claude configuration between restarts
 - **Multi-platform support** (linux/amd64, linux/arm64)
 
@@ -25,14 +25,13 @@ Add to your project's `.devcontainer/devcontainer.json`:
     "--cap-add=NET_ADMIN",
     "--cap-add=NET_RAW"
   ],
-  "remoteUser": "node",
+  "remoteUser": "bun",
   "mounts": [
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
-    "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"
+    "source=claude-code-config-${devcontainerId},target=/home/bun/.claude,type=volume"
   ],
   "containerEnv": {
-    "NODE_OPTIONS": "--max-old-space-size=4096",
-    "CLAUDE_CONFIG_DIR": "/home/node/.claude"
+    "CLAUDE_CONFIG_DIR": "/home/bun/.claude"
   },
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh"
 }
@@ -76,7 +75,7 @@ When executed with `--dangerously-skip-permissions`, devcontainers do **not prev
 ## Image Tags
 
 - `ghcr.io/gatezh/devcontainer-claude:latest` - Latest build
-- `ghcr.io/gatezh/devcontainer-claude:node20` - Node.js 20 specific tag
+- `ghcr.io/gatezh/devcontainer-claude:bun1.3.5-slim` - Bun version specific tag
 
 ## Customization
 
@@ -88,12 +87,13 @@ Edit `devcontainer.json` and add extension IDs to `customizations.vscode.extensi
 
 Edit `init-firewall.sh` to add domains to the allowlist in the `for domain in` loop.
 
-### Changing Node.js version
+### Changing Bun version
 
-Edit the `NODE_VERSION` ARG in the Dockerfile.
+Edit the `BUN_VERSION` ARG in the Dockerfile.
 
 ## Resources
 
 - [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
 - [Official devcontainer reference](https://github.com/anthropics/claude-code/tree/main/.devcontainer)
+- [Bun Documentation](https://bun.sh/docs)
 - [VS Code Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)

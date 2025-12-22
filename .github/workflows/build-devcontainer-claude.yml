@@ -30,18 +30,12 @@ jobs:
         run: |
           DOCKERFILE="devcontainer-claude/.devcontainer/Dockerfile"
 
-          NODE_VERSION=$(grep '^ARG NODE_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
-          CLAUDE_CODE_VERSION=$(grep '^ARG CLAUDE_CODE_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
-          GIT_DELTA_VERSION=$(grep '^ARG GIT_DELTA_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
+          BUN_VERSION=$(grep '^ARG BUN_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
 
-          echo "node=$NODE_VERSION" >> $GITHUB_OUTPUT
-          echo "claude_code=$CLAUDE_CODE_VERSION" >> $GITHUB_OUTPUT
-          echo "git_delta=$GIT_DELTA_VERSION" >> $GITHUB_OUTPUT
+          echo "bun=$BUN_VERSION" >> $GITHUB_OUTPUT
 
           echo "Extracted versions:"
-          echo "  Node: $NODE_VERSION"
-          echo "  Claude Code: $CLAUDE_CODE_VERSION"
-          echo "  Git Delta: $GIT_DELTA_VERSION"
+          echo "  Bun: $BUN_VERSION"
 
       - name: Generate image tags
         id: tags
@@ -49,9 +43,9 @@ jobs:
           NAMESPACE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           BASE_IMAGE="${{ env.REGISTRY }}/${NAMESPACE}/${{ env.IMAGE_NAME }}"
 
-          NODE_VERSION="${{ steps.versions.outputs.node }}"
+          BUN_VERSION="${{ steps.versions.outputs.bun }}"
 
-          VERSION_TAG="node${NODE_VERSION}"
+          VERSION_TAG="bun${BUN_VERSION}-slim"
 
           TAGS="${BASE_IMAGE}:latest,${BASE_IMAGE}:${VERSION_TAG}"
 
