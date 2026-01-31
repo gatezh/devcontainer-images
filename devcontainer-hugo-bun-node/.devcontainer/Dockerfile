@@ -1,0 +1,53 @@
+ARG BUN_VERSION=1.3.8
+
+FROM oven/bun:${BUN_VERSION}-alpine
+
+ARG HUGO_VERSION=0.155.1
+ARG NODE_VERSION=24.13.0
+
+# Platform architecture (automatically set by Docker based on build platform)
+ARG TARGETARCH
+
+# Install dependencies:
+# - ca-certificates: Required for HTTPS connections
+# - gcompat: glibc compatibility layer required for Hugo Extended binary (Alpine uses musl)
+# - git: Version control
+# - go: Required for Hugo Modules to download and manage dependencies (e.g., PaperMod theme)
+# - wget: Required to download Hugo Extended binary
+# - zsh: Better shell for development (VS Code shell integration, modern features)
+# - libstdc++: Required for Node.js on Alpine
+RUN apk add --no-cache \
+    ca-certificates \
+    git \
+    gcompat \
+    go \
+    libstdc++ \
+    wget \
+    zsh
+
+# Install Hugo Extended
+RUN set -eux; \
+    wget -O hugo.tar.gz "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz"; \
+    tar -xzf hugo.tar.gz -C /usr/local/bin/ hugo; \
+    rm hugo.tar.gz; \
+    hugo version
+
+# Install Node.js LTS (required for Cloudflare Workers and other Node.js-dependent tooling)
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) ARCH='x64' ;; \
+        arm64) ARCH='arm64' ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac; \
+    wget -O node.tar.xz "https://unofficial-builds.nodejs.org/download/release/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}-musl.tar.xz"; \
+    tar -xJf node.tar.xz -C /usr/local --strip-components=1; \
+    rm node.tar.xz; \
+    node --version; \
+    npm --version
+
+# OCI labels for container metadata and GitHub Package integration
+LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainer-images"
+LABEL org.opencontainers.image.description="Hugo Extended + Bun + Node.js development container - multiplatform image for modern static site development with Cloudflare Workers support"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.title="devcontainer-hugo-bun-node"
+LABEL org.opencontainers.image.url="https://github.com/gatezh/devcontainer-images"
