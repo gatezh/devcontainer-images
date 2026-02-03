@@ -10,13 +10,14 @@ ARG HUGO_VERSION
 ARG TARGETARCH
 
 # Install dependencies:
+# - bash: Required by Bun install script (uses bash -s)
 # - ca-certificates: Required for HTTPS connections
 # - curl: Required by Bun install script
 # - gcompat: glibc compatibility layer required for Hugo Extended binary (Alpine uses musl)
 # - go: Required for Hugo Modules to download and manage dependencies (e.g., PaperMod theme)
 # - unzip: Required by Bun install script on Linux
 # - wget: Required to download Hugo Extended binary
-RUN apk add --no-cache ca-certificates curl gcompat go unzip wget
+RUN apk add --no-cache bash ca-certificates curl gcompat go unzip wget
 
 # Install Bun using official install script
 # BUN_INSTALL sets the installation directory
@@ -26,11 +27,21 @@ ENV PATH="$BUN_INSTALL/bin:$PATH"
 RUN curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}" && \
     bun --version
 
-# Install Hugo Extended by downloading pre-built binary
+# Install Hugo Extended by downloading pre-built binary with checksum verification
 RUN set -eux; \
     wget -O hugo.tar.gz "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz"; \
+    wget -O hugo_checksums.txt "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_checksums.txt"; \
+    EXPECTED_CHECKSUM=$(grep "hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz" hugo_checksums.txt | cut -d' ' -f1); \
+    ACTUAL_CHECKSUM=$(sha256sum hugo.tar.gz | cut -d' ' -f1); \
+    if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then \
+        echo "Checksum verification failed for Hugo!"; \
+        echo "Expected: $EXPECTED_CHECKSUM"; \
+        echo "Actual:   $ACTUAL_CHECKSUM"; \
+        exit 1; \
+    fi; \
+    echo "Hugo checksum verified: $ACTUAL_CHECKSUM"; \
     tar -xzf hugo.tar.gz -C /usr/local/bin/ hugo; \
-    rm hugo.tar.gz; \
+    rm hugo.tar.gz hugo_checksums.txt; \
     hugo version
 
 # OCI labels for container metadata and GitHub Package integration
