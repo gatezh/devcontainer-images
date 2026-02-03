@@ -15,7 +15,7 @@ Create ralphex-bun: A Docker image based on the ralphex base image with Bun and 
 ## Implementation Approach
 
 - Use simple flat directory structure: `ralphex-bun/` (no .devcontainer subdirectory)
-- Use `ghcr.io/umputun/ralphex:latest` as base image (Debian-based, includes Node.js 24.x, zsh, git)
+- Use `ghcr.io/umputun/ralphex:latest` as base image (Alpine-based, includes Node.js 24.x, zsh, git)
 - Install Bun 1.3.8 using the official install script
 - Install Hugo Extended 0.155.2 by downloading the pre-built binary
 - No devcontainer.json or VS Code-specific configuration

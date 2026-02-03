@@ -11,8 +11,9 @@ ARG TARGETARCH
 
 # Install dependencies:
 # - gcompat: glibc compatibility layer required for Hugo Extended binary (Alpine uses musl)
+# - go: Required for Hugo Modules to download and manage dependencies (e.g., PaperMod theme)
 # - unzip: Required by Bun install script on Linux
-RUN apk add --no-cache gcompat unzip
+RUN apk add --no-cache gcompat go unzip
 
 # Install Bun using official install script
 # BUN_INSTALL sets the installation directory

@@ -57,7 +57,7 @@ docker run --rm ghcr.io/gatezh/ralphex-bun:latest hugo version
 docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/gatezh/ralphex-bun:latest hugo server --bind 0.0.0.0
 
 # Build a Hugo site
-docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-bun:latest hugo build
+docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-bun:latest hugo
 ```
 
 ## Building Locally
