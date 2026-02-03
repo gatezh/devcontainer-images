@@ -45,11 +45,11 @@ Create ralphex-bun: A Docker image based on the ralphex base image with Bun and 
 - Create: `ralphex-bun/README.md`
 
 **Steps:**
-- [ ] Add title and description explaining this is a standalone Docker image
-- [ ] List features (ralphex base, Bun 1.3.8, Hugo 0.155.2, Node.js 24.x included from base)
-- [ ] Add usage examples with docker run commands
-- [ ] Add Building locally instructions
-- [ ] Add Image tags section
+- [x] Add title and description explaining this is a standalone Docker image
+- [x] List features (ralphex base, Bun 1.3.8, Hugo 0.155.2, Node.js 24.x included from base)
+- [x] Add usage examples with docker run commands
+- [x] Add Building locally instructions
+- [x] Add Image tags section
 
 ---
 
