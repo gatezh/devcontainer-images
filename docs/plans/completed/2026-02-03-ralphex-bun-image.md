@@ -92,5 +92,5 @@ Create ralphex-bun: A Docker image based on the ralphex base image with Bun and 
 
 ## Completion Checklist
 
-- [ ] Update README.md with new image entry
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Update README.md with new image entry
+- [x] Move this plan to `docs/plans/completed/`
