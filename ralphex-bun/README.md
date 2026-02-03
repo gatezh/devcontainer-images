@@ -7,7 +7,7 @@ This is a standalone Docker image, not a devcontainer configuration. It can be u
 ## Features
 
 - **Ralphex Base** - Full-featured base image with common development tools
-- **Node.js 24.x** - Included from ralphex base image
+- **Node.js** - Included from ralphex base image (version provided by base)
 - **Bun 1.3.8** - Fast JavaScript runtime, bundler, and package manager
 - **Hugo Extended 0.155.2** - Full-featured static site generator with extended capabilities
 - **Git** - Version control (included from base)
