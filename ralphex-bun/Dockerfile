@@ -9,6 +9,11 @@ ARG HUGO_VERSION
 # Platform architecture (automatically set by Docker based on build platform)
 ARG TARGETARCH
 
+# Install dependencies:
+# - gcompat: glibc compatibility layer required for Hugo Extended binary (Alpine uses musl)
+# - unzip: Required by Bun install script on Linux
+RUN apk add --no-cache gcompat unzip
+
 # Install Bun using official install script
 # BUN_INSTALL sets the installation directory
 ENV BUN_INSTALL=/usr/local/bun

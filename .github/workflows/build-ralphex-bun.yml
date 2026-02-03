@@ -32,6 +32,13 @@ jobs:
           BUN_VERSION=$(grep '^ARG BUN_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
           HUGO_VERSION=$(grep '^ARG HUGO_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
 
+          if [ -z "$BUN_VERSION" ] || [ -z "$HUGO_VERSION" ]; then
+            echo "Error: Failed to extract version(s) from Dockerfile"
+            echo "  Bun: ${BUN_VERSION:-<empty>}"
+            echo "  Hugo: ${HUGO_VERSION:-<empty>}"
+            exit 1
+          fi
+
           echo "bun=$BUN_VERSION" >> $GITHUB_OUTPUT
           echo "hugo=$HUGO_VERSION" >> $GITHUB_OUTPUT
 
