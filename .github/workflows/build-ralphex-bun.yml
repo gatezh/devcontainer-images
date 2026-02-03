@@ -104,11 +104,17 @@ jobs:
           docker pull --platform linux/amd64 "$FIRST_TAG"
           docker pull --platform linux/arm64 "$FIRST_TAG"
 
-          echo "Verifying Bun installation..."
+          echo "Verifying Bun installation (amd64)..."
           docker run --rm --platform linux/amd64 "$FIRST_TAG" bun --version
 
-          echo "Verifying Hugo installation..."
+          echo "Verifying Hugo installation (amd64)..."
           docker run --rm --platform linux/amd64 "$FIRST_TAG" hugo version
 
-          echo "✅ Multiplatform image successfully built and pushed!"
+          echo "Verifying Bun installation (arm64)..."
+          docker run --rm --platform linux/arm64 "$FIRST_TAG" bun --version
+
+          echo "Verifying Hugo installation (arm64)..."
+          docker run --rm --platform linux/arm64 "$FIRST_TAG" hugo version
+
+          echo "Multiplatform image successfully built and pushed!"
           echo "Tags: $TAGS"
