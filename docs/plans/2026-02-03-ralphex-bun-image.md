@@ -76,8 +76,8 @@ Create ralphex-bun: A Docker image based on the ralphex base image with Bun and 
 - Modify: `README.md`
 
 **Steps:**
-- [ ] Add ralphex-bun to the available images list (in a separate section or note for non-devcontainer images)
-- [ ] Include brief description and usage example
+- [x] Add ralphex-bun to the available images list (in a separate section or note for non-devcontainer images)
+- [x] Include brief description and usage example
 
 ---
 

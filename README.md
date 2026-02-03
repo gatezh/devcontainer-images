@@ -4,9 +4,15 @@ This repository contains Dockerfiles for custom Docker images hosted on GitHub C
 
 ## 📚 Image Documentation
 
+### Devcontainer Images
+
 - **[devcontainer-bun](./devcontainer-bun/README.md)** - Bun development container
 - **[devcontainer-claude-bun](./devcontainer-claude-bun/README.md)** - Claude Code development container with firewall sandbox
 - **[devcontainer-hugo-bun](./devcontainer-hugo-bun/README.md)** - Hugo Extended + Bun development container
+
+### Standalone Docker Images
+
+- **[ralphex-bun](./ralphex-bun/README.md)** - Bun + Hugo Extended on ralphex base (standalone image)
 
 ## Repository Structure
 
@@ -58,6 +64,24 @@ Hugo development container with Bun runtime.
 {
   "image": "ghcr.io/<username>/devcontainer-hugo-bun:latest"
 }
+```
+
+### ralphex-bun
+
+Standalone Docker image based on ralphex with Bun 1.3.8 and Hugo Extended 0.155.2 for modern JavaScript/TypeScript development and static site generation.
+
+**Usage:**
+
+```bash
+# Pull and run interactively
+docker pull ghcr.io/<username>/ralphex-bun:latest
+docker run -it --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/ralphex-bun:latest
+
+# Run Bun commands
+docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/ralphex-bun:latest bun run index.ts
+
+# Run Hugo commands
+docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/<username>/ralphex-bun:latest hugo server --bind 0.0.0.0
 ```
 
 ## Adding a New Image
