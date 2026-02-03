@@ -16,14 +16,22 @@ This repository contains Dockerfiles for custom Docker images hosted on GitHub C
 
 ## Repository Structure
 
-Each subdirectory represents a Docker image project with the following structure:
+Each subdirectory represents a Docker image project. Devcontainer images use the following structure:
 
 ```
-image-name/
+devcontainer-name/
 ├── .devcontainer/
 │   ├── Dockerfile          # Source of truth for the image
 │   └── devcontainer.json   # Dev container configuration (uses "build")
 └── ...
+```
+
+Standalone Docker images (like ralphex-bun) use a flat structure:
+
+```
+image-name/
+├── Dockerfile              # Image definition
+└── README.md               # Image documentation
 ```
 
 ## Available Images
@@ -86,10 +94,20 @@ docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/<usernam
 
 ## Adding a New Image
 
-1. Create a new directory with your image name
+### Devcontainer Image
+
+1. Create a new directory with your image name (e.g., `devcontainer-myimage/`)
 2. Add `.devcontainer/Dockerfile` with your image definition
 3. Add `.devcontainer/devcontainer.json` that references the Dockerfile
-4. Build and push the image to GitHub Container Registry
+4. Create a GitHub Actions workflow for the image
+5. Update this README with usage instructions
+
+### Standalone Docker Image
+
+1. Create a new directory with your image name (e.g., `myimage/`)
+2. Add `Dockerfile` directly in the directory (no `.devcontainer/` subdirectory)
+3. Add `README.md` with image documentation
+4. Create a GitHub Actions workflow for the image
 5. Update this README with usage instructions
 
 ## Building and Publishing
