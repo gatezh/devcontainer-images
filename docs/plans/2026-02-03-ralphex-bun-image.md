@@ -59,14 +59,14 @@ Create ralphex-bun: A Docker image based on the ralphex base image with Bun and 
 - Create: `.github/workflows/build-ralphex-bun.yml`
 
 **Steps:**
-- [ ] Create workflow file with push trigger on master branch
-- [ ] Add path filter for `ralphex-bun/Dockerfile` changes
-- [ ] Add workflow_dispatch for manual triggers
-- [ ] Extract BUN_VERSION and HUGO_VERSION from Dockerfile
-- [ ] Generate tags: `latest` and `bun{version}-hugo{version}-ralphex`
-- [ ] Configure multi-platform build (amd64, arm64)
-- [ ] Add GHA caching
-- [ ] Add image verification step (verify both `bun --version` and `hugo version`)
+- [x] Create workflow file with push trigger on master branch
+- [x] Add path filter for `ralphex-bun/Dockerfile` changes
+- [x] Add workflow_dispatch for manual triggers
+- [x] Extract BUN_VERSION and HUGO_VERSION from Dockerfile
+- [x] Generate tags: `latest` and `bun{version}-hugo{version}-ralphex`
+- [x] Configure multi-platform build (amd64, arm64)
+- [x] Add GHA caching
+- [x] Add image verification step (verify both `bun --version` and `hugo version`)
 
 ---
 
