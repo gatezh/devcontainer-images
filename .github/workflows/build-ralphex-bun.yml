@@ -102,6 +102,7 @@ jobs:
 
           echo "Verifying multiplatform image: $FIRST_TAG"
           docker pull --platform linux/amd64 "$FIRST_TAG"
+          docker pull --platform linux/arm64 "$FIRST_TAG"
 
           echo "Verifying Bun installation..."
           docker run --rm --platform linux/amd64 "$FIRST_TAG" bun --version
