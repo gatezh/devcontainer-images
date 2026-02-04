@@ -1,3 +1,6 @@
 
 # ralphex progress logs
 progress*.txt
+
+# Claude Code local settings (user-specific permissions)
+.claude/settings.local.json
