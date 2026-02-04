@@ -12,7 +12,7 @@ This repository contains Dockerfiles for custom Docker images hosted on GitHub C
 
 ### Standalone Docker Images
 
-- **[ralphex-bun](./ralphex-bun/README.md)** - Bun + Hugo Extended on ralphex base (standalone image)
+- **[ralphex-fe](./ralphex-fe/README.md)** - Bun + Hugo Extended on ralphex base (standalone image)
 
 ## Repository Structure
 
@@ -26,7 +26,7 @@ devcontainer-name/
 └── ...
 ```
 
-Standalone Docker images (like ralphex-bun) use a flat structure:
+Standalone Docker images (like ralphex-fe) use a flat structure:
 
 ```
 image-name/
@@ -74,7 +74,7 @@ Hugo development container with Bun runtime.
 }
 ```
 
-### ralphex-bun
+### ralphex-fe
 
 Standalone Docker image based on ralphex with Bun 1.3.8 and Hugo Extended 0.155.2 for modern JavaScript/TypeScript development and static site generation.
 
@@ -82,14 +82,14 @@ Standalone Docker image based on ralphex with Bun 1.3.8 and Hugo Extended 0.155.
 
 ```bash
 # Pull and run interactively
-docker pull ghcr.io/<username>/ralphex-bun:latest
-docker run -it --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/ralphex-bun:latest
+docker pull ghcr.io/<username>/ralphex-fe:latest
+docker run -it --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/ralphex-fe:latest
 
 # Run Bun commands
-docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/ralphex-bun:latest bun run index.ts
+docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/ralphex-fe:latest bun run index.ts
 
 # Run Hugo commands
-docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/<username>/ralphex-bun:latest hugo server --bind 0.0.0.0
+docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/<username>/ralphex-fe:latest hugo server --bind 0.0.0.0
 ```
 
 ## Adding a New Image

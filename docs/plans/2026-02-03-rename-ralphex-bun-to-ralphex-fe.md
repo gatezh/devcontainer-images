@@ -67,9 +67,9 @@ This plan renames the standalone Docker image from "ralphex-bun" to "ralphex-fe"
 - Modify: `README.md`
 
 **Steps:**
-- [ ] Update ralphex-bun references to ralphex-fe in documentation links section
-- [ ] Update usage examples with new image name
-- [ ] Update repository structure examples if applicable
+- [x] Update ralphex-bun references to ralphex-fe in documentation links section
+- [x] Update usage examples with new image name
+- [x] Update repository structure examples if applicable
 
 ## Verification
 
