@@ -79,4 +79,4 @@ This plan renames the standalone Docker image from "ralphex-bun" to "ralphex-fe"
 
 ## Completion
 
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Move this plan to `docs/plans/completed/`
