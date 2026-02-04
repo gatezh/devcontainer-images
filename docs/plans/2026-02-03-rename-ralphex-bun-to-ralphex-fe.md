@@ -55,11 +55,11 @@ This plan renames the standalone Docker image from "ralphex-bun" to "ralphex-fe"
 - Modify: `.github/workflows/build-ralphex-fe.yml`
 
 **Steps:**
-- [ ] Update workflow name from "Build ralphex-bun" to "Build ralphex-fe"
-- [ ] Update IMAGE_NAME env variable from "ralphex-bun" to "ralphex-fe"
-- [ ] Update paths trigger from ralphex-bun/ to ralphex-fe/
-- [ ] Update DOCKERFILE path from ralphex-bun/ to ralphex-fe/
-- [ ] Update context and file paths in build step
+- [x] Update workflow name from "Build ralphex-bun" to "Build ralphex-fe"
+- [x] Update IMAGE_NAME env variable from "ralphex-bun" to "ralphex-fe"
+- [x] Update paths trigger from ralphex-bun/ to ralphex-fe/
+- [x] Update DOCKERFILE path from ralphex-bun/ to ralphex-fe/
+- [x] Update context and file paths in build step
 
 ## Task 5: Update root README.md
 

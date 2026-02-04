@@ -1,16 +1,16 @@
-name: Build ralphex-bun
+name: Build ralphex-fe
 
 on:
   push:
     branches:
       - master
     paths:
-      - 'ralphex-bun/Dockerfile'
+      - 'ralphex-fe/Dockerfile'
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ralphex-bun
+  IMAGE_NAME: ralphex-fe
 
 jobs:
   build-and-push:
@@ -27,7 +27,7 @@ jobs:
       - name: Extract versions from Dockerfile
         id: versions
         run: |
-          DOCKERFILE="ralphex-bun/Dockerfile"
+          DOCKERFILE="ralphex-fe/Dockerfile"
 
           BUN_VERSION=$(grep '^ARG BUN_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
           HUGO_VERSION=$(grep '^ARG HUGO_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
@@ -86,8 +86,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ralphex-bun
-          file: ralphex-bun/Dockerfile
+          context: ralphex-fe
+          file: ralphex-fe/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.tags.outputs.tags }}
