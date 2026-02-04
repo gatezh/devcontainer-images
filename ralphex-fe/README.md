@@ -1,4 +1,4 @@
-# ralphex-bun
+# ralphex-fe
 
 A standalone Docker image based on ralphex with Bun and Hugo Extended runtimes, designed for modern JavaScript/TypeScript development and static site generation.
 
@@ -25,39 +25,39 @@ This image is built for multiple architectures:
 
 ```bash
 # Pull the latest image
-docker pull ghcr.io/gatezh/ralphex-bun:latest
+docker pull ghcr.io/gatezh/ralphex-fe:latest
 
 # Run interactively
-docker run -it --rm ghcr.io/gatezh/ralphex-bun:latest
+docker run -it --rm ghcr.io/gatezh/ralphex-fe:latest
 
 # Run with a mounted project directory
-docker run -it --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-bun:latest
+docker run -it --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-fe:latest
 ```
 
 ### Using Bun
 
 ```bash
 # Check Bun version
-docker run --rm ghcr.io/gatezh/ralphex-bun:latest bun --version
+docker run --rm ghcr.io/gatezh/ralphex-fe:latest bun --version
 
 # Run a script
-docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-bun:latest bun run index.ts
+docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-fe:latest bun run index.ts
 
 # Install dependencies
-docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-bun:latest bun install
+docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-fe:latest bun install
 ```
 
 ### Using Hugo
 
 ```bash
 # Check Hugo version
-docker run --rm ghcr.io/gatezh/ralphex-bun:latest hugo version
+docker run --rm ghcr.io/gatezh/ralphex-fe:latest hugo version
 
 # Start Hugo development server (with port mapping)
-docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/gatezh/ralphex-bun:latest hugo server --bind 0.0.0.0
+docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/gatezh/ralphex-fe:latest hugo server --bind 0.0.0.0
 
 # Build a Hugo site
-docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-bun:latest hugo
+docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-fe:latest hugo
 ```
 
 ## Building Locally
@@ -65,7 +65,7 @@ docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-bun:la
 ### Simple Build
 
 ```bash
-docker build -t ralphex-bun ralphex-bun/
+docker build -t ralphex-fe ralphex-fe/
 ```
 
 ### Multiplatform Build with Docker Buildx
@@ -73,10 +73,10 @@ docker build -t ralphex-bun ralphex-bun/
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/ralphex-bun:bun1.3.8-hugo0.155.2-ralphex \
-  -t ghcr.io/<USERNAME>/ralphex-bun:latest \
+  -t ghcr.io/<USERNAME>/ralphex-fe:bun1.3.8-hugo0.155.2-ralphex \
+  -t ghcr.io/<USERNAME>/ralphex-fe:latest \
   --push \
-  ralphex-bun
+  ralphex-fe
 ```
 
 ### Building with Custom Versions
@@ -85,8 +85,8 @@ docker buildx build \
 docker build \
   --build-arg BUN_VERSION=1.4.0 \
   --build-arg HUGO_VERSION=0.156.0 \
-  -t ralphex-bun:custom \
-  ralphex-bun/
+  -t ralphex-fe:custom \
+  ralphex-fe/
 ```
 
 **Note:** The `--push` flag requires authentication to GitHub Container Registry:

@@ -44,10 +44,10 @@ This plan renames the standalone Docker image from "ralphex-bun" to "ralphex-fe"
 - Modify: `ralphex-fe/README.md`
 
 **Steps:**
-- [ ] Update title from "ralphex-bun" to "ralphex-fe"
-- [ ] Update all docker image references from ralphex-bun to ralphex-fe
-- [ ] Update all docker build/run examples
-- [ ] Update version tag format references
+- [x] Update title from "ralphex-bun" to "ralphex-fe"
+- [x] Update all docker image references from ralphex-bun to ralphex-fe
+- [x] Update all docker build/run examples
+- [x] Update version tag format references
 
 ## Task 4: Update GitHub Actions workflow
 
