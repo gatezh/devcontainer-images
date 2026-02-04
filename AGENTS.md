@@ -17,19 +17,23 @@ repository-root/
 │   └── workflows/
 │       ├── README.md            # Workflow documentation
 │       └── build-*.yml          # GitHub Actions workflows
-└── devcontainer-{name}/
-    ├── README.md                # Image-specific documentation
-    └── .devcontainer/
-        ├── Dockerfile           # Image definition (source of truth)
-        ├── devcontainer.json    # VS Code devcontainer configuration
-        └── *.sh                 # Optional scripts (e.g., init-firewall.sh)
+├── devcontainer-{name}/         # Devcontainer images (VS Code integration)
+│   ├── README.md                # Image-specific documentation
+│   └── .devcontainer/
+│       ├── Dockerfile           # Image definition (source of truth)
+│       ├── devcontainer.json    # VS Code devcontainer configuration
+│       └── *.sh                 # Optional scripts (e.g., init-firewall.sh)
+└── {standalone-name}/           # Standalone Docker images (no devcontainer)
+    ├── Dockerfile               # Image definition
+    └── README.md                # Image documentation
 ```
 
 ## Naming Conventions
 
 ### Image Names
-- Format: `devcontainer-{primary-tool}` or `devcontainer-{primary-tool}-{secondary-tool}`
-- Examples: `devcontainer-bun`, `devcontainer-hugo-bun`, `devcontainer-claude-bun`
+- Devcontainer format: `devcontainer-{primary-tool}` or `devcontainer-{primary-tool}-{secondary-tool}`
+- Standalone format: `{base}-{variant}` (e.g., `ralphex-fe`)
+- Examples: `devcontainer-bun`, `devcontainer-hugo-bun`, `devcontainer-claude-bun`, `ralphex-fe`
 
 ### Version ARGs in Dockerfile
 - Place at the top of Dockerfile
@@ -127,6 +131,8 @@ Always include to keep node_modules out of host machine:
 ## GitHub Actions Workflow Patterns
 
 ### Trigger Configuration
+
+For devcontainer images:
 ```yaml
 on:
   push:
@@ -135,6 +141,17 @@ on:
     paths:
       - '{image-name}/.devcontainer/Dockerfile'
       - '{image-name}/.devcontainer/*.sh'  # If scripts exist
+  workflow_dispatch:
+```
+
+For standalone images:
+```yaml
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '{image-name}/Dockerfile'
   workflow_dispatch:
 ```
 
@@ -184,12 +201,20 @@ cache-to: type=gha,mode=max
 
 ## When Adding a New Image
 
+### Devcontainer Image
 1. Create directory: `devcontainer-{name}/`
 2. Add `.devcontainer/Dockerfile` following patterns above
 3. Add `.devcontainer/devcontainer.json` following patterns above
 4. Add `README.md` with image documentation
 5. Create `.github/workflows/build-devcontainer-{name}.yml`
 6. Update main `README.md` with new image entry
+
+### Standalone Docker Image
+1. Create directory: `{image-name}/`
+2. Add `Dockerfile` directly in the directory (no `.devcontainer/` subdirectory)
+3. Add `README.md` with image documentation
+4. Create `.github/workflows/build-{image-name}.yml`
+5. Update main `README.md` with new image entry
 
 ## Code Style
 

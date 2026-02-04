@@ -32,6 +32,10 @@ RUN set -eux; \
     wget -O hugo.tar.gz "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz"; \
     wget -O hugo_checksums.txt "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_checksums.txt"; \
     EXPECTED_CHECKSUM=$(grep "hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz" hugo_checksums.txt | cut -d' ' -f1); \
+    if [ -z "$EXPECTED_CHECKSUM" ]; then \
+        echo "Error: Could not find checksum for hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz in checksums file"; \
+        exit 1; \
+    fi; \
     ACTUAL_CHECKSUM=$(sha256sum hugo.tar.gz | cut -d' ' -f1); \
     if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then \
         echo "Checksum verification failed for Hugo!"; \
