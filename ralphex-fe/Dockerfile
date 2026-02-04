@@ -46,7 +46,7 @@ RUN set -eux; \
 
 # OCI labels for container metadata and GitHub Package integration
 LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainer-images"
-LABEL org.opencontainers.image.description="Ralphex-based image with Bun and Hugo Extended - multiplatform image for modern development"
+LABEL org.opencontainers.image.description="Ralphex-fe: Frontend development image with Bun and Hugo Extended - multiplatform image for modern development"
 LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.title="ralphex-bun"
+LABEL org.opencontainers.image.title="ralphex-fe"
 LABEL org.opencontainers.image.url="https://github.com/gatezh/devcontainer-images"
