@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git checkout:*)",
-      "WebSearch",
-      "WebFetch(domain:github.blog)"
-    ]
-  }
-}
