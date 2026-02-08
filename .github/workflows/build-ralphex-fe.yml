@@ -103,8 +103,9 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Verify image
+        env:
+          TAGS: ${{ steps.tags.outputs.tags }}
         run: |
-          TAGS="${{ steps.tags.outputs.tags }}"
           FIRST_TAG=$(echo "$TAGS" | cut -d',' -f1)
 
           echo "Verifying multiplatform image: $FIRST_TAG"

@@ -37,6 +37,7 @@ jobs:
       versions_updated: ${{ steps.update.outputs.updated }}
       bun_version: ${{ steps.update.outputs.bun_version }}
       hugo_version: ${{ steps.update.outputs.hugo_version }}
+      ralphex_version: ${{ steps.update.outputs.ralphex_version }}
 
     steps:
       - name: Checkout repository
@@ -80,6 +81,7 @@ jobs:
           echo "Updated versions in Dockerfile:"
           grep '^ARG BUN_VERSION=' "${{ env.DOCKERFILE_PATH }}"
           grep '^ARG HUGO_VERSION=' "${{ env.DOCKERFILE_PATH }}"
+          grep '^ARG RALPHEX_VERSION=' "${{ env.DOCKERFILE_PATH }}"
 
           # Check if anything changed
           if git diff --quiet "${{ env.DOCKERFILE_PATH }}"; then
@@ -148,9 +150,7 @@ jobs:
         run: |
           BUN_VERSION=$(grep '^ARG BUN_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
           HUGO_VERSION=$(grep '^ARG HUGO_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
-
-          # Ralphex version comes from the update job output
-          RALPHEX_VERSION="${{ needs.update-dockerfile.outputs.ralphex_version }}"
+          RALPHEX_VERSION=$(grep '^ARG RALPHEX_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
 
           echo "bun=$BUN_VERSION" >> $GITHUB_OUTPUT
           echo "hugo=$HUGO_VERSION" >> $GITHUB_OUTPUT
