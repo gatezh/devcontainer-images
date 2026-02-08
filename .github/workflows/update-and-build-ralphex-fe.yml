@@ -11,6 +11,16 @@ on:
         description: 'New Hugo version to set in Dockerfile (e.g., 0.156.0)'
         required: true
         type: string
+      ralphex_tag:
+        description: 'Ralphex base tag (latest or digest like @sha256:abc...)'
+        required: false
+        default: 'latest'
+        type: string
+      force_rebuild:
+        description: 'Force rebuild even if versions unchanged (to get latest ralphex base)'
+        required: false
+        default: false
+        type: boolean
       update_only:
         description: 'Only update Dockerfile without building image'
         required: false
@@ -45,24 +55,31 @@ jobs:
         env:
           INPUT_BUN_VERSION: ${{ inputs.bun_version }}
           INPUT_HUGO_VERSION: ${{ inputs.hugo_version }}
+          INPUT_RALPHEX_TAG: ${{ inputs.ralphex_tag }}
         run: |
           # Read current versions
           CURRENT_BUN=$(grep '^ARG BUN_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
           CURRENT_HUGO=$(grep '^ARG HUGO_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
+          CURRENT_RALPHEX=$(grep '^ARG RALPHEX_TAG=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
 
           echo "Current versions:"
           echo "  Bun: $CURRENT_BUN"
           echo "  Hugo: $CURRENT_HUGO"
+          echo "  Ralphex: $CURRENT_RALPHEX"
           echo ""
           echo "Requested versions:"
           echo "  Bun: $INPUT_BUN_VERSION"
           echo "  Hugo: $INPUT_HUGO_VERSION"
+          echo "  Ralphex: $INPUT_RALPHEX_TAG"
 
           # Update Bun version (GNU sed syntax for Linux)
           sed -i "s/^ARG BUN_VERSION=.*/ARG BUN_VERSION=$INPUT_BUN_VERSION/" "${{ env.DOCKERFILE_PATH }}"
 
           # Update Hugo version (GNU sed syntax for Linux)
           sed -i "s/^ARG HUGO_VERSION=.*/ARG HUGO_VERSION=$INPUT_HUGO_VERSION/" "${{ env.DOCKERFILE_PATH }}"
+
+          # Update Ralphex tag (GNU sed syntax for Linux)
+          sed -i "s/^ARG RALPHEX_TAG=.*/ARG RALPHEX_TAG=$INPUT_RALPHEX_TAG/" "${{ env.DOCKERFILE_PATH }}"
 
           # Verify changes
           echo ""
@@ -87,6 +104,7 @@ jobs:
         env:
           BUN_VERSION: ${{ steps.update.outputs.bun_version }}
           HUGO_VERSION: ${{ steps.update.outputs.hugo_version }}
+          RALPHEX_TAG: ${{ inputs.ralphex_tag }}
           GITHUB_ACTOR: ${{ github.actor }}
           ACTOR_ID: ${{ github.actor_id }}
         run: |
@@ -97,7 +115,7 @@ jobs:
 
           # Create commit with multi-line message using multiple -m flags
           git commit \
-            -m "chore(ralphex-fe): update versions to Bun ${BUN_VERSION}, Hugo ${HUGO_VERSION}" \
+            -m "chore(ralphex-fe): update versions to Bun ${BUN_VERSION}, Hugo ${HUGO_VERSION}, Ralphex ${RALPHEX_TAG}" \
             -m "Updated via GitHub Actions workflow dispatch." \
             -m "Co-Authored-By: ${GITHUB_ACTOR} <${ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com>"
 
@@ -112,7 +130,8 @@ jobs:
 
   build-and-push:
     needs: update-dockerfile
-    if: ${{ needs.update-dockerfile.outputs.versions_updated == 'true' && inputs.update_only == false }}
+    # Build if: versions changed OR force_rebuild is checked (and update_only is not checked)
+    if: ${{ (needs.update-dockerfile.outputs.versions_updated == 'true' || inputs.force_rebuild == true) && inputs.update_only == false }}
     runs-on: ubuntu-latest
 
     permissions:
