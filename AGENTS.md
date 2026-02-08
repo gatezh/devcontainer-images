@@ -6,6 +6,42 @@ This document defines patterns, conventions, and guidelines for AI agents workin
 
 This repository contains Dockerfiles for custom devcontainer images hosted on GitHub Container Registry (ghcr.io). Each image is designed for VS Code Dev Containers with specific development environments.
 
+## AI Agent Best Practices
+
+### Always Verify with Official Documentation
+
+When implementing features or making changes, **ALWAYS** check the latest official documentation:
+
+- **GitHub Actions**: https://docs.github.com/en/actions
+  - Runs on Ubuntu (GNU/Linux) - use GNU coreutils syntax, NOT macOS/BSD syntax
+  - Example: `sed -i "pattern" file` (GNU) NOT `sed -i.bak "pattern" file` (BSD)
+  - Check platform-specific tool behavior (sed, grep, awk, etc.)
+  - Verify workflow syntax with official examples
+
+- **Docker/Dockerfile**: https://docs.docker.com/reference/dockerfile/
+  - Multi-platform builds use `TARGETARCH` (amd64, arm64)
+  - Verify base image availability and compatibility
+
+- **Tools and Dependencies**:
+  - Bun: https://bun.sh/docs
+  - Hugo: https://gohugo.io/documentation/
+  - GitHub CLI: https://cli.github.com/manual/
+  - Always verify command syntax from official docs, not assumptions
+
+### Platform Awareness
+
+- **GitHub Actions runners**: Ubuntu Linux (use GNU tools)
+- **Docker builds**: Multi-platform (linux/amd64, linux/arm64)
+- **Base images**: Check Alpine vs Debian (apk vs apt, musl vs glibc)
+- **Scripts**: Test for portability (sh vs bash, GNU vs BSD tools)
+
+### Validation Before Committing
+
+- YAML syntax validation for workflows
+- Dockerfile syntax validation
+- Test on target platform (not just local macOS/Windows)
+- Verify assumptions about available tools and their versions
+
 ## Directory Structure
 
 ```
