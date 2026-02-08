@@ -95,15 +95,11 @@ jobs:
 
           git add "${{ env.DOCKERFILE_PATH }}"
 
-          # Create commit message using heredoc for proper multi-line formatting
-          git commit -m "$(cat <<EOF
-chore(ralphex-fe): update versions to Bun ${BUN_VERSION}, Hugo ${HUGO_VERSION}
-
-Updated via GitHub Actions workflow dispatch.
-
-Co-Authored-By: ${GITHUB_ACTOR} <${ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com>
-EOF
-)"
+          # Create commit with multi-line message using multiple -m flags
+          git commit \
+            -m "chore(ralphex-fe): update versions to Bun ${BUN_VERSION}, Hugo ${HUGO_VERSION}" \
+            -m "Updated via GitHub Actions workflow dispatch." \
+            -m "Co-Authored-By: ${GITHUB_ACTOR} <${ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com>"
 
           git push
 
