@@ -95,12 +95,15 @@ jobs:
 
           git add "${{ env.DOCKERFILE_PATH }}"
 
-          # Create commit message
-          git commit -m "chore(ralphex-fe): update versions to Bun ${BUN_VERSION}, Hugo ${HUGO_VERSION}
+          # Create commit message using heredoc for proper multi-line formatting
+          git commit -m "$(cat <<EOF
+chore(ralphex-fe): update versions to Bun ${BUN_VERSION}, Hugo ${HUGO_VERSION}
 
 Updated via GitHub Actions workflow dispatch.
 
-Co-Authored-By: ${GITHUB_ACTOR} <${ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com>"
+Co-Authored-By: ${GITHUB_ACTOR} <${ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com>
+EOF
+)"
 
           git push
 
