@@ -1,8 +1,8 @@
 ARG BUN_VERSION=1.3.8
 ARG HUGO_VERSION=0.155.2
-ARG RALPHEX_VERSION=latest
+ARG RALPHEX_VERSION=v0.9.0
 
-# ralphex base image - uses version tag like Bun and Hugo
+# ralphex base image - pinned version like Bun and Hugo
 FROM ghcr.io/umputun/ralphex:${RALPHEX_VERSION}
 
 ARG BUN_VERSION
