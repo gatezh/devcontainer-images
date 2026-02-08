@@ -1,10 +1,10 @@
 ARG BUN_VERSION=1.3.8
 ARG HUGO_VERSION=0.155.2
+ARG RALPHEX_TAG=latest
 
-# Note: umputun/ralphex only publishes :latest tag. For stricter reproducibility,
-# consider pinning to a digest (e.g., @sha256:...) obtained from:
-# docker pull ghcr.io/umputun/ralphex:latest && docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/umputun/ralphex:latest
-FROM ghcr.io/umputun/ralphex:latest
+# ralphex base image - can use :latest or pin to digest for reproducibility
+# To get digest: docker pull ghcr.io/umputun/ralphex:latest && docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/umputun/ralphex:latest
+FROM ghcr.io/umputun/ralphex:${RALPHEX_TAG}
 
 ARG BUN_VERSION
 ARG HUGO_VERSION
