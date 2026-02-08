@@ -33,20 +33,24 @@ jobs:
 
           BUN_VERSION=$(grep '^ARG BUN_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
           HUGO_VERSION=$(grep '^ARG HUGO_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
+          RALPHEX_VERSION=$(grep '^ARG RALPHEX_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
 
-          if [ -z "$BUN_VERSION" ] || [ -z "$HUGO_VERSION" ]; then
+          if [ -z "$BUN_VERSION" ] || [ -z "$HUGO_VERSION" ] || [ -z "$RALPHEX_VERSION" ]; then
             echo "Error: Failed to extract version(s) from Dockerfile"
             echo "  Bun: ${BUN_VERSION:-<empty>}"
             echo "  Hugo: ${HUGO_VERSION:-<empty>}"
+            echo "  Ralphex: ${RALPHEX_VERSION:-<empty>}"
             exit 1
           fi
 
           echo "bun=$BUN_VERSION" >> $GITHUB_OUTPUT
           echo "hugo=$HUGO_VERSION" >> $GITHUB_OUTPUT
+          echo "ralphex=$RALPHEX_VERSION" >> $GITHUB_OUTPUT
 
           echo "Extracted versions:"
           echo "  Bun: $BUN_VERSION"
           echo "  Hugo: $HUGO_VERSION"
+          echo "  Ralphex: $RALPHEX_VERSION"
 
       - name: Generate image tags
         id: tags
@@ -56,8 +60,9 @@ jobs:
 
           BUN_VERSION="${{ steps.versions.outputs.bun }}"
           HUGO_VERSION="${{ steps.versions.outputs.hugo }}"
+          RALPHEX_VERSION="${{ steps.versions.outputs.ralphex }}"
 
-          VERSION_TAG="bun${BUN_VERSION}-hugo${HUGO_VERSION}-ralphex"
+          VERSION_TAG="bun${BUN_VERSION}-hugo${HUGO_VERSION}-ralphex${RALPHEX_VERSION}"
 
           TAGS="${BASE_IMAGE}:latest,${BASE_IMAGE}:${VERSION_TAG}"
 
