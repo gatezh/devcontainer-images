@@ -113,3 +113,51 @@ docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/<usernam
 ## Building and Publishing
 
 Images from this repository are built and published to GitHub Container Registry. Other projects can reference these images in their `devcontainer.json` files using the `"image"` property.
+
+## Updating Image Versions
+
+### Via GitHub UI
+
+Some images have automated update workflows that allow you to update dependency versions without manually editing Dockerfiles:
+
+1. Go to **Actions** tab → Select the update workflow (e.g., "Update and Build ralphex-fe")
+2. Click **Run workflow**
+3. Enter new versions (e.g., Bun 1.4.0, Hugo 0.156.0)
+4. Click **Run workflow** button
+
+The workflow will:
+- Update the Dockerfile with new versions
+- Commit the changes to the repository
+- Build and push the updated image
+
+### Via GitHub CLI
+
+If you have the [GitHub CLI](https://cli.github.com/) installed, you can trigger updates from your terminal:
+
+```bash
+# Update ralphex-fe image versions
+gh workflow run update-and-build-ralphex-fe.yml \
+  -f bun_version=1.4.0 \
+  -f hugo_version=0.156.0
+
+# Update without building (just commit to repo)
+gh workflow run update-and-build-ralphex-fe.yml \
+  -f bun_version=1.4.0 \
+  -f hugo_version=0.156.0 \
+  -f update_only=true
+
+# Check workflow status
+gh run list --workflow=update-and-build-ralphex-fe.yml
+
+# Watch the latest run in real-time
+gh run watch
+```
+
+**Install GitHub CLI:**
+```bash
+# macOS
+brew install gh
+
+# Authenticate (one-time setup)
+gh auth login
+```
