@@ -1,10 +1,9 @@
 ARG BUN_VERSION=1.3.8
 ARG HUGO_VERSION=0.155.2
-ARG RALPHEX_TAG=latest
+ARG RALPHEX_VERSION=latest
 
-# ralphex base image - can use :latest or pin to digest for reproducibility
-# To get digest: docker pull ghcr.io/umputun/ralphex:latest && docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/umputun/ralphex:latest
-FROM ghcr.io/umputun/ralphex:${RALPHEX_TAG}
+# ralphex base image - uses version tag like Bun and Hugo
+FROM ghcr.io/umputun/ralphex:${RALPHEX_VERSION}
 
 ARG BUN_VERSION
 ARG HUGO_VERSION

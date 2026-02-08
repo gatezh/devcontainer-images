@@ -11,16 +11,10 @@ on:
         description: 'New Hugo version to set in Dockerfile (e.g., 0.156.0)'
         required: true
         type: string
-      ralphex_tag:
-        description: 'Ralphex base tag (latest or digest like @sha256:abc...)'
-        required: false
-        default: 'latest'
+      ralphex_version:
+        description: 'Ralphex version tag (e.g., latest or v1.0.0)'
+        required: true
         type: string
-      force_rebuild:
-        description: 'Force rebuild even if versions unchanged (to get latest ralphex base)'
-        required: false
-        default: false
-        type: boolean
       update_only:
         description: 'Only update Dockerfile without building image'
         required: false
@@ -55,12 +49,12 @@ jobs:
         env:
           INPUT_BUN_VERSION: ${{ inputs.bun_version }}
           INPUT_HUGO_VERSION: ${{ inputs.hugo_version }}
-          INPUT_RALPHEX_TAG: ${{ inputs.ralphex_tag }}
+          INPUT_RALPHEX_VERSION: ${{ inputs.ralphex_version }}
         run: |
           # Read current versions
           CURRENT_BUN=$(grep '^ARG BUN_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
           CURRENT_HUGO=$(grep '^ARG HUGO_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
-          CURRENT_RALPHEX=$(grep '^ARG RALPHEX_TAG=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
+          CURRENT_RALPHEX=$(grep '^ARG RALPHEX_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
 
           echo "Current versions:"
           echo "  Bun: $CURRENT_BUN"
@@ -70,7 +64,7 @@ jobs:
           echo "Requested versions:"
           echo "  Bun: $INPUT_BUN_VERSION"
           echo "  Hugo: $INPUT_HUGO_VERSION"
-          echo "  Ralphex: $INPUT_RALPHEX_TAG"
+          echo "  Ralphex: $INPUT_RALPHEX_VERSION"
 
           # Update Bun version (GNU sed syntax for Linux)
           sed -i "s/^ARG BUN_VERSION=.*/ARG BUN_VERSION=$INPUT_BUN_VERSION/" "${{ env.DOCKERFILE_PATH }}"
@@ -78,8 +72,8 @@ jobs:
           # Update Hugo version (GNU sed syntax for Linux)
           sed -i "s/^ARG HUGO_VERSION=.*/ARG HUGO_VERSION=$INPUT_HUGO_VERSION/" "${{ env.DOCKERFILE_PATH }}"
 
-          # Update Ralphex tag (GNU sed syntax for Linux)
-          sed -i "s/^ARG RALPHEX_TAG=.*/ARG RALPHEX_TAG=$INPUT_RALPHEX_TAG/" "${{ env.DOCKERFILE_PATH }}"
+          # Update Ralphex version (GNU sed syntax for Linux)
+          sed -i "s/^ARG RALPHEX_VERSION=.*/ARG RALPHEX_VERSION=$INPUT_RALPHEX_VERSION/" "${{ env.DOCKERFILE_PATH }}"
 
           # Verify changes
           echo ""
@@ -98,13 +92,14 @@ jobs:
 
           echo "bun_version=$INPUT_BUN_VERSION" >> $GITHUB_OUTPUT
           echo "hugo_version=$INPUT_HUGO_VERSION" >> $GITHUB_OUTPUT
+          echo "ralphex_version=$INPUT_RALPHEX_VERSION" >> $GITHUB_OUTPUT
 
       - name: Commit and push changes
         if: steps.update.outputs.updated == 'true'
         env:
           BUN_VERSION: ${{ steps.update.outputs.bun_version }}
           HUGO_VERSION: ${{ steps.update.outputs.hugo_version }}
-          RALPHEX_TAG: ${{ inputs.ralphex_tag }}
+          RALPHEX_VERSION: ${{ steps.update.outputs.ralphex_version }}
           GITHUB_ACTOR: ${{ github.actor }}
           ACTOR_ID: ${{ github.actor_id }}
         run: |
@@ -115,7 +110,7 @@ jobs:
 
           # Create commit with multi-line message using multiple -m flags
           git commit \
-            -m "chore(ralphex-fe): update versions to Bun ${BUN_VERSION}, Hugo ${HUGO_VERSION}, Ralphex ${RALPHEX_TAG}" \
+            -m "chore(ralphex-fe): update versions to Bun ${BUN_VERSION}, Hugo ${HUGO_VERSION}, Ralphex ${RALPHEX_VERSION}" \
             -m "Updated via GitHub Actions workflow dispatch." \
             -m "Co-Authored-By: ${GITHUB_ACTOR} <${ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com>"
 
@@ -130,8 +125,8 @@ jobs:
 
   build-and-push:
     needs: update-dockerfile
-    # Build if: versions changed OR force_rebuild is checked (and update_only is not checked)
-    if: ${{ (needs.update-dockerfile.outputs.versions_updated == 'true' || inputs.force_rebuild == true) && inputs.update_only == false }}
+    # Build if versions changed and update_only is not checked
+    if: ${{ needs.update-dockerfile.outputs.versions_updated == 'true' && inputs.update_only == false }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -154,23 +149,29 @@ jobs:
           BUN_VERSION=$(grep '^ARG BUN_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
           HUGO_VERSION=$(grep '^ARG HUGO_VERSION=' "${{ env.DOCKERFILE_PATH }}" | cut -d'=' -f2)
 
+          # Ralphex version comes from the update job output
+          RALPHEX_VERSION="${{ needs.update-dockerfile.outputs.ralphex_version }}"
+
           echo "bun=$BUN_VERSION" >> $GITHUB_OUTPUT
           echo "hugo=$HUGO_VERSION" >> $GITHUB_OUTPUT
+          echo "ralphex=$RALPHEX_VERSION" >> $GITHUB_OUTPUT
 
           echo "Building with versions:"
           echo "  Bun: $BUN_VERSION"
           echo "  Hugo: $HUGO_VERSION"
+          echo "  Ralphex: $RALPHEX_VERSION"
 
       - name: Generate image tags
         id: tags
         env:
           BUN_VERSION: ${{ steps.versions.outputs.bun }}
           HUGO_VERSION: ${{ steps.versions.outputs.hugo }}
+          RALPHEX_VERSION: ${{ steps.versions.outputs.ralphex }}
         run: |
           NAMESPACE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           BASE_IMAGE="${{ env.REGISTRY }}/${NAMESPACE}/${{ env.IMAGE_NAME }}"
 
-          VERSION_TAG="bun${BUN_VERSION}-hugo${HUGO_VERSION}-ralphex"
+          VERSION_TAG="bun${BUN_VERSION}-hugo${HUGO_VERSION}-ralphex${RALPHEX_VERSION}"
 
           TAGS="${BASE_IMAGE}:latest,${BASE_IMAGE}:${VERSION_TAG}"
 
