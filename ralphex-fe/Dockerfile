@@ -3,7 +3,7 @@ ARG BUN_VERSION=1.3.9
 FROM oven/bun:${BUN_VERSION}-alpine
 
 ARG HUGO_VERSION=0.155.3
-ARG RALPHEX_VERSION=0.10.1
+ARG RALPHEX_VERSION=0.10.5
 
 # Platform architecture (automatically set by Docker based on build platform)
 ARG TARGETARCH
