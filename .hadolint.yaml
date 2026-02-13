@@ -1,0 +1,14 @@
+# Hadolint configuration
+# https://github.com/hadolint/hadolint#configure
+ignored:
+  # Don't require pinning system packages in apk add / apt-get install.
+  # Dev container images intentionally use latest OS packages.
+  - DL3008 # apt-get: pin versions
+  - DL3018 # apk: pin versions
+
+  # wget is used intentionally for downloading release binaries.
+  - DL3047 # avoid using wget; use curl
+
+  # pipefail SHELL not required — only one pipe exists (bun install)
+  # and curl -f already fails on HTTP errors.
+  - DL4006 # set SHELL option -o pipefail before RUN with pipe
