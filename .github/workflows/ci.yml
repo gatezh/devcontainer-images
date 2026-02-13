@@ -127,11 +127,15 @@ jobs:
           fi
 
           if [ "$INCLUDES" = "[]" ]; then
-            echo "has-changes=false" >> $GITHUB_OUTPUT
-            echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+            {
+              echo "has-changes=false"
+              echo "matrix={\"include\":[]}"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "has-changes=true" >> $GITHUB_OUTPUT
-            echo "matrix=$(echo "$INCLUDES" | jq -c '{include:.}')" >> $GITHUB_OUTPUT
+            {
+              echo "has-changes=true"
+              echo "matrix=$(echo "$INCLUDES" | jq -c '{include:.}')"
+            } >> "$GITHUB_OUTPUT"
           fi
 
   # ── Build changed images and verify installed tools ─────────────────
