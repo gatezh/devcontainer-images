@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       bun_version:
-        description: 'New Bun version to set in Dockerfile (e.g., 1.4.0)'
-        required: true
+        description: 'New Bun version (e.g., 1.3.9). Leave empty to keep current.'
+        required: false
         type: string
       hugo_version:
-        description: 'New Hugo version to set in Dockerfile (e.g., 0.156.0)'
-        required: true
+        description: 'New Hugo version (e.g., 0.155.3). Leave empty to keep current.'
+        required: false
         type: string
       ralphex_version:
-        description: 'Ralphex version tag (e.g., latest or v1.0.0)'
-        required: true
+        description: 'Ralphex version tag (e.g., v0.11.0). Leave empty to keep current.'
+        required: false
         type: string
       update_only:
         description: 'Only update Dockerfile without building image'
@@ -61,20 +61,22 @@ jobs:
           echo "  Bun: $CURRENT_BUN"
           echo "  Hugo: $CURRENT_HUGO"
           echo "  Ralphex: $CURRENT_RALPHEX"
+
+          # Use input values or fall back to current Dockerfile values
+          NEW_BUN=${INPUT_BUN_VERSION:-$CURRENT_BUN}
+          NEW_HUGO=${INPUT_HUGO_VERSION:-$CURRENT_HUGO}
+          NEW_RALPHEX=${INPUT_RALPHEX_VERSION:-$CURRENT_RALPHEX}
+
           echo ""
-          echo "Requested versions:"
-          echo "  Bun: $INPUT_BUN_VERSION"
-          echo "  Hugo: $INPUT_HUGO_VERSION"
-          echo "  Ralphex: $INPUT_RALPHEX_VERSION"
+          echo "Target versions:"
+          echo "  Bun: $NEW_BUN"
+          echo "  Hugo: $NEW_HUGO"
+          echo "  Ralphex: $NEW_RALPHEX"
 
-          # Update Bun version (GNU sed syntax for Linux)
-          sed -i "s/^ARG BUN_VERSION=.*/ARG BUN_VERSION=$INPUT_BUN_VERSION/" "${{ env.DOCKERFILE_PATH }}"
-
-          # Update Hugo version (GNU sed syntax for Linux)
-          sed -i "s/^ARG HUGO_VERSION=.*/ARG HUGO_VERSION=$INPUT_HUGO_VERSION/" "${{ env.DOCKERFILE_PATH }}"
-
-          # Update Ralphex version (GNU sed syntax for Linux)
-          sed -i "s/^ARG RALPHEX_VERSION=.*/ARG RALPHEX_VERSION=$INPUT_RALPHEX_VERSION/" "${{ env.DOCKERFILE_PATH }}"
+          # Update versions in Dockerfile (GNU sed syntax for Linux)
+          sed -i "s/^ARG BUN_VERSION=.*/ARG BUN_VERSION=$NEW_BUN/" "${{ env.DOCKERFILE_PATH }}"
+          sed -i "s/^ARG HUGO_VERSION=.*/ARG HUGO_VERSION=$NEW_HUGO/" "${{ env.DOCKERFILE_PATH }}"
+          sed -i "s/^ARG RALPHEX_VERSION=.*/ARG RALPHEX_VERSION=$NEW_RALPHEX/" "${{ env.DOCKERFILE_PATH }}"
 
           # Verify changes
           echo ""
@@ -92,9 +94,9 @@ jobs:
             echo "updated=true" >> $GITHUB_OUTPUT
           fi
 
-          echo "bun_version=$INPUT_BUN_VERSION" >> $GITHUB_OUTPUT
-          echo "hugo_version=$INPUT_HUGO_VERSION" >> $GITHUB_OUTPUT
-          echo "ralphex_version=$INPUT_RALPHEX_VERSION" >> $GITHUB_OUTPUT
+          echo "bun_version=$NEW_BUN" >> $GITHUB_OUTPUT
+          echo "hugo_version=$NEW_HUGO" >> $GITHUB_OUTPUT
+          echo "ralphex_version=$NEW_RALPHEX" >> $GITHUB_OUTPUT
 
       - name: Commit and push changes
         if: steps.update.outputs.updated == 'true'
