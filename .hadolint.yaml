@@ -12,3 +12,11 @@ ignored:
   # pipefail SHELL not required — only one pipe exists (bun install)
   # and curl -f already fails on HTTP errors.
   - DL4006 # set SHELL option -o pipefail before RUN with pipe
+
+  # SNIPPET variable in devcontainer-claude-bun follows the official
+  # Anthropic Claude Code devcontainer pattern (anthropics/claude-code).
+  - SC2034 # variable appears unused
+
+  # Pipes inside command substitutions (e.g. grep | cut) are intentional;
+  # empty results are explicitly checked afterwards.
+  - SC2312 # pipe in command substitution masks return value
