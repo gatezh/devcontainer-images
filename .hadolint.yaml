@@ -6,8 +6,10 @@ ignored:
   - DL3008 # apt-get: pin versions
   - DL3018 # apk: pin versions
 
-  # wget is used intentionally for downloading release binaries.
+  # wget is used intentionally for downloading release binaries;
+  # ralphex-fe uses curl (bun install script) + wget (Hugo binary download).
   - DL3047 # avoid using wget; use curl
+  - DL4001 # either use wget or curl, not both
 
   # pipefail SHELL not required — only one pipe exists (bun install)
   # and curl -f already fails on HTTP errors.
