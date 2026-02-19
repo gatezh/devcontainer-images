@@ -1,6 +1,6 @@
 ARG BUN_VERSION=1.3.9
 ARG HUGO_VERSION=0.155.3
-ARG RALPHEX_VERSION=0.15.0
+ARG RALPHEX_VERSION=0.15.2
 
 # Extend the ralphex base image which provides the ralphex binary at /srv/ralphex
 # along with Claude Code, Codex, Node.js, git, ripgrep, and other development tools
