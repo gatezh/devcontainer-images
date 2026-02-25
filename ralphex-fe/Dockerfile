@@ -14,12 +14,19 @@ ARG TARGETARCH
 
 # Install dependencies:
 # - ca-certificates: Required for HTTPS connections
+# - chromium: System Chromium browser for Playwright tests (Alpine/musl-native, avoids Playwright's
+#             bundled binary which requires glibc/Debian)
 # - curl: Required by Bun install script
 # - gcompat: glibc compatibility layer required for Hugo Extended binary (Alpine uses musl)
 # - go: Required for Hugo Modules to download and manage dependencies (e.g., PaperMod theme)
+# - jq: JSON processor for agent workflows (parsing configs, API responses, package.json)
 # - unzip: Required by Bun install script on Linux
 # - wget: Required to download Hugo Extended binary
-RUN apk add --no-cache ca-certificates curl gcompat go unzip wget
+RUN apk add --no-cache ca-certificates chromium curl gcompat go jq unzip wget
+
+# Tell Playwright to use system Chromium instead of downloading its own binary
+# (Playwright's built-in browser download doesn't work on Alpine/musl)
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Install Bun using official install script
 # BUN_INSTALL sets the installation directory
