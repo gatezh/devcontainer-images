@@ -74,9 +74,10 @@ jobs:
           echo "  Ralphex: $NEW_RALPHEX"
 
           # Update versions in Dockerfile (GNU sed syntax for Linux)
-          sed -i "s/^ARG BUN_VERSION=.*/ARG BUN_VERSION=$NEW_BUN/" "${{ env.DOCKERFILE_PATH }}"
-          sed -i "s/^ARG HUGO_VERSION=.*/ARG HUGO_VERSION=$NEW_HUGO/" "${{ env.DOCKERFILE_PATH }}"
-          sed -i "s/^ARG RALPHEX_VERSION=.*/ARG RALPHEX_VERSION=$NEW_RALPHEX/" "${{ env.DOCKERFILE_PATH }}"
+          # Use | as delimiter to avoid breakage if version strings contain /
+          sed -i "s|^ARG BUN_VERSION=.*|ARG BUN_VERSION=$NEW_BUN|" "${{ env.DOCKERFILE_PATH }}"
+          sed -i "s|^ARG HUGO_VERSION=.*|ARG HUGO_VERSION=$NEW_HUGO|" "${{ env.DOCKERFILE_PATH }}"
+          sed -i "s|^ARG RALPHEX_VERSION=.*|ARG RALPHEX_VERSION=$NEW_RALPHEX|" "${{ env.DOCKERFILE_PATH }}"
 
           # Verify changes
           echo ""
@@ -245,6 +246,14 @@ jobs:
           docker run --rm --platform linux/amd64 "$FIRST_TAG" sh -c \
             'test "$PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" = "/usr/bin/chromium-browser" && test -x "$PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" && echo "OK: $PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" || (echo "FAIL: got $PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" && exit 1)'
 
+          echo "Verifying PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD env var (amd64)..."
+          docker run --rm --platform linux/amd64 "$FIRST_TAG" sh -c \
+            'test "$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" = "1" && echo "OK: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1" || (echo "FAIL: got PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" && exit 1)'
+
+          echo "Verifying ttf-freefont installation (amd64)..."
+          docker run --rm --platform linux/amd64 "$FIRST_TAG" sh -c \
+            'ls /usr/share/fonts/freefont/FreeSans.ttf && echo "OK: freefont found" || (echo "FAIL: freefont not found" && exit 1)'
+
           echo "Verifying Chromium installation (arm64)..."
           docker run --rm --platform linux/arm64 "$FIRST_TAG" chromium-browser --version
 
@@ -254,6 +263,14 @@ jobs:
           echo "Verifying PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH env var (arm64)..."
           docker run --rm --platform linux/arm64 "$FIRST_TAG" sh -c \
             'test "$PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" = "/usr/bin/chromium-browser" && test -x "$PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" && echo "OK: $PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" || (echo "FAIL: got $PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" && exit 1)'
+
+          echo "Verifying PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD env var (arm64)..."
+          docker run --rm --platform linux/arm64 "$FIRST_TAG" sh -c \
+            'test "$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" = "1" && echo "OK: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1" || (echo "FAIL: got PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" && exit 1)'
+
+          echo "Verifying ttf-freefont installation (arm64)..."
+          docker run --rm --platform linux/arm64 "$FIRST_TAG" sh -c \
+            'ls /usr/share/fonts/freefont/FreeSans.ttf && echo "OK: freefont found" || (echo "FAIL: freefont not found" && exit 1)'
 
           echo "✅ Multiplatform image successfully built and pushed!"
           echo "Tags: $TAGS"
