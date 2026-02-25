@@ -47,12 +47,12 @@
 - [x] Verify Dockerfile syntax is valid (no broken lines, correct ordering)
 
 ### Task 2: Build and verify the image locally
-- [ ] Build the image locally for current platform: `docker build -t ralphex-fe:test ralphex-fe/`
-- [ ] Verify Chromium is available: `docker run --rm ralphex-fe:test chromium-browser --version`
-- [ ] Verify jq is available: `docker run --rm ralphex-fe:test jq --version`
-- [ ] Verify env var is set: `docker run --rm ralphex-fe:test sh -c 'echo $PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH'`
-- [ ] Verify existing tools still work: bun, hugo, curl, wget
-- [ ] Clean up test image
+- [x] Build the image locally for current platform: `docker build -t ralphex-fe:test ralphex-fe/`
+- [x] Verify Chromium is available: `docker run --rm ralphex-fe:test chromium-browser --version`
+- [x] Verify jq is available: `docker run --rm ralphex-fe:test jq --version`
+- [x] Verify env var is set: `docker run --rm ralphex-fe:test sh -c 'echo $PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH'`
+- [x] Verify existing tools still work: bun, hugo, curl, wget
+- [x] Clean up test image
 
 ### Task 3: Update ralphex-fe README
 - [ ] Add Chromium/Playwright to the features list
