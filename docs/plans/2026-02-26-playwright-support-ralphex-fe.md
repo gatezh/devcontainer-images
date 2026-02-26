@@ -82,8 +82,8 @@
 - [x] Run `git diff` to review complete changeset
 
 ### Task 7: Update documentation
-- [ ] Check if main README.md needs any updates for the new tag format
-- [ ] Verify AGENTS.md conventions are followed (OCI labels, workflow patterns)
+- [x] Check if main README.md needs any updates for the new tag format
+- [x] Verify AGENTS.md conventions are followed (OCI labels, workflow patterns)
 
 ## Technical Details
 
