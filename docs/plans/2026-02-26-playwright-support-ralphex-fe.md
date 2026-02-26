@@ -47,14 +47,14 @@
 - [x] Verify Dockerfile syntax is valid (no trailing whitespace, proper line continuations)
 
 ### Task 3: Simplify image tags in build-ralphex-fe.yml
-- [ ] Change tag generation to use only ralphex version: `${RALPHEX_VERSION}` instead of `bun${BUN_VERSION}-hugo${HUGO_VERSION}-ralphex${RALPHEX_VERSION}`
-- [ ] Keep extracting all three versions (needed for logging) but tag only uses ralphex version
-- [ ] Add Playwright verification steps to the verify section (both amd64 and arm64):
+- [x] Change tag generation to use only ralphex version: `${RALPHEX_VERSION}` instead of `bun${BUN_VERSION}-hugo${HUGO_VERSION}-ralphex${RALPHEX_VERSION}`
+- [x] Keep extracting all three versions (needed for logging) but tag only uses ralphex version
+- [x] Add Playwright verification steps to the verify section (both amd64 and arm64):
   - Verify `chromium-browser --version`
   - Verify `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` env var is set correctly and binary is executable
   - Verify `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` env var is `1`
   - Verify `ttf-freefont` font files exist
-- [ ] Validate YAML syntax
+- [x] Validate YAML syntax
 
 ### Task 4: Update update-and-build-ralphex-fe.yml
 - [ ] Change tag generation to match build workflow (just ralphex version)
