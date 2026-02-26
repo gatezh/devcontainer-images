@@ -11,7 +11,6 @@ This is a standalone Docker image, not a devcontainer configuration. It can be u
 - **Bun 1.3.9** - Fast JavaScript runtime, bundler, and package manager
 - **Hugo Extended 0.155.3** - Full-featured static site generator with extended capabilities
 - **Chromium** - System Chromium browser for Playwright end-to-end tests (Alpine/musl-native)
-- **jq** - Lightweight JSON processor for agent workflows and scripting
 - **Git** - Version control (included from base)
 - **Zsh** - Modern shell (included from base)
 
@@ -102,18 +101,6 @@ docker run --rm ghcr.io/gatezh/ralphex-fe:latest chromium-browser --no-sandbox -
 
 # Check the Playwright env var is set
 docker run --rm ghcr.io/gatezh/ralphex-fe:latest sh -c 'echo $PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH'
-```
-
-### Using jq
-
-jq is useful for JSON processing in scripts and agent workflows:
-
-```bash
-# Parse package.json
-docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/gatezh/ralphex-fe:latest jq '.version' package.json
-
-# Check jq version
-docker run --rm ghcr.io/gatezh/ralphex-fe:latest jq --version
 ```
 
 ## Building Locally

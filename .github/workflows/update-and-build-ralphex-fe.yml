@@ -245,9 +245,6 @@ jobs:
           echo "Verifying Chromium installation (amd64)..."
           docker run --rm --platform linux/amd64 "$FIRST_TAG" chromium-browser --no-sandbox --version
 
-          echo "Verifying jq installation (amd64)..."
-          docker run --rm --platform linux/amd64 "$FIRST_TAG" jq --version
-
           echo "Verifying PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH env var (amd64)..."
           docker run --rm --platform linux/amd64 "$FIRST_TAG" sh -c \
             'test "$PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" = "/usr/bin/chromium-browser" && echo "OK: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is correct" || (echo "FAIL: expected /usr/bin/chromium-browser, got $PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" && exit 1)'
@@ -264,9 +261,6 @@ jobs:
 
           echo "Verifying Chromium installation (arm64)..."
           docker run --rm --platform linux/arm64 "$FIRST_TAG" chromium-browser --no-sandbox --version
-
-          echo "Verifying jq installation (arm64)..."
-          docker run --rm --platform linux/arm64 "$FIRST_TAG" jq --version
 
           echo "Verifying PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH env var (arm64)..."
           docker run --rm --platform linux/arm64 "$FIRST_TAG" sh -c \

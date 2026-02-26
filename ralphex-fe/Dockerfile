@@ -20,10 +20,9 @@ ARG TARGETARCH
 # - curl: Required by Bun install script
 # - gcompat: glibc compatibility layer required for Hugo Extended binary (Alpine uses musl)
 # - go: Required for Hugo Modules to download and manage dependencies (e.g., PaperMod theme)
-# - jq: JSON processor for agent workflows (parsing configs, API responses, package.json)
 # - unzip: Required by Bun install script on Linux
 # - wget: Required to download Hugo Extended binary
-RUN apk add --no-cache ca-certificates chromium curl gcompat go jq ttf-freefont unzip wget
+RUN apk add --no-cache ca-certificates chromium curl gcompat go ttf-freefont unzip wget
 
 # Playwright environment variables:
 # - PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: Prevents Playwright's postinstall from attempting to
