@@ -76,7 +76,7 @@ Hugo development container with Bun runtime.
 
 ### ralphex-fe
 
-Standalone Docker image based on ralphex with Bun 1.3.9, Hugo Extended 0.155.3, Chromium, and jq for modern JavaScript/TypeScript development, static site generation, and end-to-end testing.
+Standalone Docker image based on ralphex with Bun 1.3.9, Hugo Extended 0.155.3, and Chromium for modern JavaScript/TypeScript development, static site generation, and end-to-end testing.
 
 **Usage:**
 

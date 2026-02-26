@@ -131,7 +131,8 @@ Instead:
    ```typescript
    launchOptions: {
      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-     args: ['--no-sandbox', '--disable-setuid-sandbox'],
+     // --disable-dev-shm-usage: prevents Chromium crashes in Docker (default /dev/shm is 64MB)
+     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
    }
    ```
 4. Projects install only `@playwright/test` (e.g., `bun add -d @playwright/test`) — never `playwright install`.
