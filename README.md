@@ -76,7 +76,7 @@ Hugo development container with Bun runtime.
 
 ### ralphex-fe
 
-Standalone Docker image based on ralphex with Bun 1.3.8 and Hugo Extended 0.155.2 for modern JavaScript/TypeScript development and static site generation.
+Standalone Docker image based on ralphex with Bun 1.3.9, Hugo Extended 0.155.3, and Chromium for modern JavaScript/TypeScript development, static site generation, and end-to-end testing.
 
 **Usage:**
 
@@ -90,6 +90,7 @@ docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/ralphex-fe
 
 # Run Hugo commands
 docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/<username>/ralphex-fe:latest hugo server --bind 0.0.0.0
+
 ```
 
 ## Adding a New Image

@@ -8,8 +8,9 @@ This is a standalone Docker image, not a devcontainer configuration. It can be u
 
 - **Ralphex Base** - Full-featured base image with common development tools
 - **Node.js** - Included from ralphex base image (version provided by base)
-- **Bun 1.3.8** - Fast JavaScript runtime, bundler, and package manager
-- **Hugo Extended 0.155.2** - Full-featured static site generator with extended capabilities
+- **Bun 1.3.9** - Fast JavaScript runtime, bundler, and package manager
+- **Hugo Extended 0.155.3** - Full-featured static site generator with extended capabilities
+- **Chromium** - System browser for headless end-to-end testing
 - **Git** - Version control (included from base)
 - **Zsh** - Modern shell (included from base)
 
@@ -73,7 +74,7 @@ docker build -t ralphex-fe ralphex-fe/
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/ralphex-fe:bun1.3.8-hugo0.155.2-ralphex \
+  -t ghcr.io/<USERNAME>/ralphex-fe:0.11.0 \
   -t ghcr.io/<USERNAME>/ralphex-fe:latest \
   --push \
   ralphex-fe
@@ -97,15 +98,15 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u <USERNAME> --password-stdin
 ## Image Tags
 
 - `latest` - Most recent build
-- `bun{version}-hugo{version}-ralphex` - Version-specific tag (e.g., `bun1.3.8-hugo0.155.2-ralphex`)
+- `{ralphex-version}` - Version-specific tag (e.g., `0.11.0`)
 
 ## Version Information
 
 The image uses specific versions defined as build arguments in the Dockerfile:
 
-- **Bun Version**: `1.3.8` (via `BUN_VERSION` build arg)
-- **Hugo Version**: `0.155.2` (via `HUGO_VERSION` build arg)
-- **Base Image**: `ghcr.io/umputun/ralphex:latest`
+- **Bun Version**: `1.3.9` (via `BUN_VERSION` build arg)
+- **Hugo Version**: `0.155.3` (via `HUGO_VERSION` build arg)
+- **Base Image**: `ghcr.io/umputun/ralphex:0.11.0` (via `RALPHEX_VERSION` build arg)
 
 ## License
 
