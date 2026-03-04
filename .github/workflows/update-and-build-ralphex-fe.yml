@@ -187,12 +187,14 @@ jobs:
       - name: Generate image tags
         id: tags
         env:
+          BUN_VERSION: ${{ steps.versions.outputs.bun }}
+          HUGO_VERSION: ${{ steps.versions.outputs.hugo }}
           RALPHEX_VERSION: ${{ steps.versions.outputs.ralphex }}
         run: |
           NAMESPACE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           BASE_IMAGE="${{ env.REGISTRY }}/${NAMESPACE}/${{ env.IMAGE_NAME }}"
 
-          VERSION_TAG="${RALPHEX_VERSION}"
+          VERSION_TAG="bun${BUN_VERSION}-hugo${HUGO_VERSION}-ralphex${RALPHEX_VERSION}"
 
           TAGS="${BASE_IMAGE}:latest,${BASE_IMAGE}:${VERSION_TAG}"
 
