@@ -47,6 +47,9 @@ jobs:
 
   build:
     needs: prepare
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       image-name: ralphex-fe
