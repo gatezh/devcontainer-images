@@ -3,14 +3,25 @@ ARG HUGO_VERSION=0.156.0
 ARG RALPHEX_VERSION=0.20.0
 ARG RTK_VERSION=0.26.0
 
-# Build RTK from source for Alpine/musl compatibility
-# The pre-built arm64 binary is gnu-linked and incompatible with Alpine's musl libc.
-# For amd64, a pre-built musl binary exists but building from source keeps both arches consistent.
-FROM rust:alpine AS rtk-builder
+# Cross-compile RTK on native amd64 to avoid slow QEMU-emulated Rust builds.
+# --platform=linux/amd64 forces native execution; TARGETARCH selects the cross-compilation target.
+# Using Debian for easy access to aarch64 cross-compilation toolchain.
+FROM --platform=linux/amd64 rust:slim-bookworm AS rtk-builder
 ARG RTK_VERSION
-RUN apk add --no-cache musl-dev
-RUN cargo install --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked && \
-    rtk --version
+ARG TARGETARCH
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    musl-tools gcc-aarch64-linux-gnu \
+    && rm -rf /var/lib/apt/lists/*
+RUN rustup target add x86_64-unknown-linux-musl aarch64-unknown-linux-musl
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+      export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc && \
+      export CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc && \
+      cargo install --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
+        --target aarch64-unknown-linux-musl; \
+    else \
+      cargo install --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
+        --target x86_64-unknown-linux-musl; \
+    fi
 
 # Extend the ralphex base image which provides the ralphex binary at /srv/ralphex
 # along with Claude Code, Codex, Node.js, git, ripgrep, and other development tools
