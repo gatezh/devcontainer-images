@@ -10,13 +10,14 @@ FROM --platform=linux/amd64 rust:slim-bookworm AS rtk-builder
 ARG RTK_VERSION
 ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    musl-tools gcc-aarch64-linux-gnu libc6-dev-arm64-cross \
+    musl-tools curl \
     && rm -rf /var/lib/apt/lists/*
+# Pre-built aarch64-linux-musl cross-compiler (musl headers + linker, no glibc)
+RUN curl -sSfL https://musl.cc/aarch64-linux-musl-cross.tgz | tar xz -C /opt/
 RUN rustup target add x86_64-unknown-linux-musl aarch64-unknown-linux-musl
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
-      export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc && \
-      export CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc && \
-      export CFLAGS_aarch64_unknown_linux_musl="--sysroot=/usr/aarch64-linux-gnu" && \
+      export CC_aarch64_unknown_linux_musl=/opt/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc && \
+      export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/opt/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc && \
       cargo install --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
         --target aarch64-unknown-linux-musl; \
     else \
