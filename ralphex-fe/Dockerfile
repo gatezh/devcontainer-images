@@ -5,19 +5,24 @@ ARG RTK_VERSION=0.26.0
 
 # Cross-compile RTK on native amd64 to avoid slow QEMU-emulated Rust builds.
 # --platform=linux/amd64 forces native execution; TARGETARCH selects the cross-compilation target.
-# Using Debian for easy access to aarch64 cross-compilation toolchain.
+# Zig provides a C cross-compiler that natively targets musl (no glibc/musl mismatch).
 FROM --platform=linux/amd64 rust:slim-bookworm AS rtk-builder
 ARG RTK_VERSION
 ARG TARGETARCH
+ARG ZIG_VERSION=0.14.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    musl-tools curl \
+    musl-tools xz-utils \
     && rm -rf /var/lib/apt/lists/*
-# Pre-built aarch64-linux-musl cross-compiler (musl headers + linker, no glibc)
-RUN curl -sSfL https://musl.cc/aarch64-linux-musl-cross.tgz | tar xz -C /opt/
+RUN curl -sSfL "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
+    | tar xJ -C /opt/ && \
+    ln -s "/opt/zig-linux-x86_64-${ZIG_VERSION}/zig" /usr/local/bin/zig
+# Wrapper script: invokes zig cc targeting aarch64-linux-musl
+RUN printf '#!/bin/sh\nexec zig cc -target aarch64-linux-musl "$@"\n' \
+    > /usr/local/bin/aarch64-linux-musl-cc && chmod +x /usr/local/bin/aarch64-linux-musl-cc
 RUN rustup target add x86_64-unknown-linux-musl aarch64-unknown-linux-musl
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
-      export CC_aarch64_unknown_linux_musl=/opt/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc && \
-      export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/opt/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc && \
+      export CC_aarch64_unknown_linux_musl=aarch64-linux-musl-cc && \
+      export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-cc && \
       cargo install --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
         --target aarch64-unknown-linux-musl; \
     else \
