@@ -3,32 +3,29 @@ ARG HUGO_VERSION=0.156.0
 ARG RALPHEX_VERSION=0.20.0
 ARG RTK_VERSION=0.26.0
 
-# Cross-compile RTK on native amd64 to avoid slow QEMU-emulated Rust builds.
-# --platform=linux/amd64 forces native execution; TARGETARCH selects the cross-compilation target.
-# Zig provides a C cross-compiler that natively targets musl (no glibc/musl mismatch).
-FROM --platform=linux/amd64 rust:slim-bookworm AS rtk-builder
+# ── RTK builder: amd64 (native musl build on Alpine) ───────────────────
+# rust:alpine already targets musl; just need musl-dev for C dependencies.
+FROM --platform=linux/amd64 rust:alpine AS rtk-amd64
 ARG RTK_VERSION
+RUN apk add --no-cache musl-dev
+RUN cargo install --root /output \
+    --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
+    --target x86_64-unknown-linux-musl
+
+# ── RTK builder: arm64 (cross-compile with pre-built musl toolchain) ───
+# messense/rust-musl-cross:aarch64-musl provides a complete aarch64 musl
+# cross-compiler (CC, linker, headers) pre-configured via .cargo/config.toml.
+# Runs natively on amd64 — no QEMU emulation.
+FROM --platform=linux/amd64 messense/rust-musl-cross:aarch64-musl AS rtk-arm64
+ARG RTK_VERSION
+RUN cargo install --root /output \
+    --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
+    --target aarch64-unknown-linux-musl
+
+# ── Select the correct builder based on target architecture ─────────────
+# BuildKit resolves TARGETARCH per platform; only the needed stage is built.
 ARG TARGETARCH
-ARG ZIG_VERSION=0.14.0
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    musl-tools xz-utils \
-    && rm -rf /var/lib/apt/lists/*
-RUN curl -sSfL "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
-    | tar xJ -C /opt/ && \
-    ln -s "/opt/zig-linux-x86_64-${ZIG_VERSION}/zig" /usr/local/bin/zig
-# Wrapper script: invokes zig cc targeting aarch64-linux-musl
-RUN printf '#!/bin/sh\nexec zig cc -target aarch64-linux-musl "$@"\n' \
-    > /usr/local/bin/aarch64-linux-musl-cc && chmod +x /usr/local/bin/aarch64-linux-musl-cc
-RUN rustup target add x86_64-unknown-linux-musl aarch64-unknown-linux-musl
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
-      export CC_aarch64_unknown_linux_musl=aarch64-linux-musl-cc && \
-      export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-cc && \
-      cargo install --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
-        --target aarch64-unknown-linux-musl; \
-    else \
-      cargo install --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
-        --target x86_64-unknown-linux-musl; \
-    fi
+FROM rtk-${TARGETARCH} AS rtk-builder
 
 # Extend the ralphex base image which provides the ralphex binary at /srv/ralphex
 # along with Claude Code, Codex, Node.js, git, ripgrep, and other development tools
@@ -90,8 +87,8 @@ RUN set -eux; \
     rm hugo.tar.gz hugo_checksums.txt; \
     hugo version
 
-# Copy RTK binary built from source in the builder stage
-COPY --from=rtk-builder /usr/local/cargo/bin/rtk /usr/local/bin/rtk
+# Copy RTK binary from the architecture-matched builder stage
+COPY --from=rtk-builder /output/bin/rtk /usr/local/bin/rtk
 RUN rtk --version
 
 # OCI labels for container metadata and GitHub Package integration

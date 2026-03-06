@@ -15,6 +15,14 @@ ignored:
   # arm64 musl binaries natively on amd64 to avoid slow QEMU emulation).
   - DL3029 # do not use --platform with FROM
 
+  # Dynamic FROM (e.g. FROM stage-${TARGETARCH}) references a build stage,
+  # not an untagged external image. Hadolint cannot resolve it statically.
+  - DL3006 # always tag image version explicitly
+
+  # Separate RUN instructions are intentional for Docker layer caching
+  # (e.g. apk install vs cargo install in builder stages).
+  - DL3059 # multiple consecutive RUN instructions
+
   # pipefail SHELL not required — only one pipe exists (bun install)
   # and curl -f already fails on HTTP errors.
   - DL4006 # set SHELL option -o pipefail before RUN with pipe
