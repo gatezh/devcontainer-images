@@ -1,6 +1,31 @@
 ARG BUN_VERSION=1.3.9
 ARG HUGO_VERSION=0.156.0
 ARG RALPHEX_VERSION=0.20.0
+ARG RTK_VERSION=0.26.0
+
+# ── RTK builder: amd64 (native musl build on Alpine) ───────────────────
+# rust:alpine already targets musl; just need musl-dev for C dependencies.
+FROM --platform=linux/amd64 rust:alpine AS rtk-amd64
+ARG RTK_VERSION
+RUN apk add --no-cache musl-dev
+RUN cargo install --root /output \
+    --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
+    --target x86_64-unknown-linux-musl
+
+# ── RTK builder: arm64 (cross-compile with pre-built musl toolchain) ───
+# messense/rust-musl-cross:aarch64-musl provides a complete aarch64 musl
+# cross-compiler (CC, linker, headers) pre-configured via .cargo/config.toml.
+# Runs natively on amd64 — no QEMU emulation.
+FROM --platform=linux/amd64 messense/rust-musl-cross:aarch64-musl AS rtk-arm64
+ARG RTK_VERSION
+RUN cargo install --root /output \
+    --git https://github.com/rtk-ai/rtk.git --tag "v${RTK_VERSION}" --locked \
+    --target aarch64-unknown-linux-musl
+
+# ── Select the correct builder based on target architecture ─────────────
+# BuildKit resolves TARGETARCH per platform; only the needed stage is built.
+ARG TARGETARCH
+FROM rtk-${TARGETARCH} AS rtk-builder
 
 # Extend the ralphex base image which provides the ralphex binary at /srv/ralphex
 # along with Claude Code, Codex, Node.js, git, ripgrep, and other development tools
@@ -61,6 +86,10 @@ RUN set -eux; \
     tar -xzf hugo.tar.gz -C /usr/local/bin/ hugo; \
     rm hugo.tar.gz hugo_checksums.txt; \
     hugo version
+
+# Copy RTK binary from the architecture-matched builder stage
+COPY --from=rtk-builder /output/bin/rtk /usr/local/bin/rtk
+RUN rtk --version
 
 # OCI labels for container metadata and GitHub Package integration
 LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainer-images"
