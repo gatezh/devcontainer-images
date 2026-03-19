@@ -125,7 +125,11 @@ RUN npx -y playwright@${PLAYWRIGHT_VERSION} install --only-shell
 # The installer places the binary in ~/.local/bin/ (previously ~/.claude/bin/).
 # Runtime volume mounts over ~/.claude/ (for config persistence) could shadow it,
 # so copy to a system path to ensure the binary survives volume mounts.
-RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN for i in 1 2 3; do \
+      curl -fsSL https://claude.ai/install.sh | bash && break; \
+      echo "Retry $i/3 in 15s..." && sleep 15; \
+    done \
+  && test -x /home/node/.local/bin/claude
 USER root
 RUN if [ -d /home/node/.local/bin ] && ls /home/node/.local/bin/claude* >/dev/null 2>&1; then \
       cp /home/node/.local/bin/claude* /usr/local/bin/; \
