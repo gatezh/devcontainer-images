@@ -38,6 +38,10 @@ Both variants are built for:
 - `:<git-sha>` — pinned to a specific commit
 - `:<YYYYMMDD>` — date-based tag (e.g., `20260319`)
 
+## Automatic Rebuilds
+
+The image rebuilds daily at 5am MT (11:00 UTC) with no Docker cache, picking up the latest Claude Code, Playwright, and other tools. Manual rebuilds can be triggered via the "Run workflow" button in the Actions UI.
+
 ## Quick Start
 
 ### Default variant
@@ -125,6 +129,11 @@ node = "22"
 ### Optional: `.devcontainer/init-plugins.sh`
 
 Claude Code plugin initialization. Runs once at container creation. Idempotent.
+Wire it into `postCreateCommand` in your `devcontainer.json`:
+
+```jsonc
+"postCreateCommand": "bash .devcontainer/init-plugins.sh"
+```
 
 ```bash
 #!/bin/bash
@@ -204,7 +213,7 @@ If your project has additional services, create volume mounts in `devcontainer.j
 
 ## Playwright Version Strategy
 
-The image bakes in a Playwright browser binary at a specific version (controlled by the `PLAYWRIGHT_VERSION` build arg).
+The image bakes in a Playwright browser binary at a specific version (controlled by the `PLAYWRIGHT_VERSION` build arg). Daily rebuilds keep this reasonably current.
 
 - If your project's `@playwright/test` version **matches** the image — zero startup cost, browser is ready
 - If your project's version **differs** — Playwright auto-downloads the correct browser on first test run (~10s graceful fallback)
@@ -215,7 +224,7 @@ The image bakes in a Playwright browser binary at a specific version (controlled
 | Arg | Default | Description |
 |-----|---------|-------------|
 | `GIT_DELTA_VERSION` | `0.18.2` | git-delta version |
-| `PLAYWRIGHT_VERSION` | `1.50.1` | Playwright browser binary version |
+| `PLAYWRIGHT_VERSION` | `1.58.2` | Playwright browser binary version |
 | `AGENT_BROWSER_VERSION` | `0.14.0` | agent-browser version (default target only) |
 
 ## Building Locally
