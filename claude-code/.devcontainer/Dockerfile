@@ -12,7 +12,7 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # ─── BASE ─────────────────────────────────────────────────────────────────────
-FROM node:22-trixie-slim AS base
+FROM node:24-trixie-slim AS base
 
 ARG GIT_DELTA_VERSION=0.18.2
 ARG PLAYWRIGHT_VERSION=1.58.2
@@ -98,15 +98,18 @@ ENV PATH="/home/node/.local/share/mise/shims:$PATH"
 ENV MISE_TRUSTED_CONFIG_PATHS="/workspace"
 
 # ── Playwright (headless shell for browser testing) ───────────────────────────
-# Browser binary baked at a pinned version (PLAYWRIGHT_VERSION build arg).
-# If a project's @playwright/test version differs from PLAYWRIGHT_VERSION,
-# Playwright auto-downloads the correct browser on first test run (~10s).
-# This is a best-effort optimization, not a hard contract.
-# Using --only-shell for smaller image (agent-browser installs full chromium separately).
+# Two-layer strategy for multi-project compatibility:
+#   1. System deps (install-deps) — heavy, needs root, version-stable across
+#      nearby releases. Baked into the image so projects don't need sudo.
+#   2. Browser binary (install --only-shell) — light, version-specific.
+#      Baked as a cache; projects MUST run `npx playwright install --only-shell`
+#      at container creation to ensure the binary matches their @playwright/test.
+#      That command is idempotent: no-op when versions match, ~10s download if not.
 USER root
 RUN npx -y playwright@${PLAYWRIGHT_VERSION} install-deps chromium
 USER node
 RUN npx -y playwright@${PLAYWRIGHT_VERSION} install --only-shell
+ENV PLAYWRIGHT_VERSION=${PLAYWRIGHT_VERSION}
 
 # ── Claude Code CLI ───────────────────────────────────────────────────────────
 # Using npm instead of the native installer (curl claude.ai/install.sh | bash).
