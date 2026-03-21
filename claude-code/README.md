@@ -15,7 +15,7 @@ Projects consume these pre-built images and control their own tool versions via 
 
 | Layer | What | Why |
 |-------|------|-----|
-| OS | `node:22-trixie-slim` + system packages | Node is needed during the build (Playwright, npm globals) |
+| OS | `node:24-trixie-slim` + system packages | Node is needed during the build (Playwright, npm globals) |
 | Shell | Fish, Starship, fzf | Built-in syntax highlighting, autosuggestions, completions |
 | Tools | git-delta, gh CLI, jq, nano, vim, wget, unzip, less, man-db, procps | Standard dev utilities |
 | Mise | The tool manager itself (not the tools) | Projects run `mise install` at container creation for their tool versions |
@@ -70,9 +70,11 @@ Add to your project's `.devcontainer/devcontainer.json`:
     "NODE_OPTIONS": "--max-old-space-size=4096",
     "CLAUDE_CONFIG_DIR": "/home/node/.claude"
   },
-  // mise install reads .mise.toml and installs project-specific tool versions.
   // sudo chown fixes volume ownership — safety net in case Docker volume population didn't apply.
-  "updateContentCommand": "sudo chown node /workspace/node_modules && sudo chown -R node /home/node/.claude && mise install && bun install",
+  // mise install reads .mise.toml and installs project-specific tool versions.
+  // playwright install ensures the correct browser binary for the project's @playwright/test version
+  // (idempotent — skips download if the image's cached binary already matches).
+  "updateContentCommand": "sudo chown node /workspace/node_modules && sudo chown -R node /home/node/.claude && mise install && bun install && npx playwright install --only-shell",
   "waitFor": "postCreateCommand"
 }
 ```
@@ -100,9 +102,13 @@ Add to your project's `.devcontainer/devcontainer.json`:
     "TZ": "${localEnv:TZ:America/Los_Angeles}",
     "DEVCONTAINER": "true",
     "NODE_OPTIONS": "--max-old-space-size=4096",
-    "CLAUDE_CONFIG_DIR": "/home/node/.claude"
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    // Required — the sandbox firewall blocks OAuth login, so the token must be
+    // injected from the host. See "Sandbox Authentication" section below.
+    "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"
   },
-  "postCreateCommand": "mise install",
+  // Runs before postStartCommand (firewall), so network is still available for browser downloads.
+  "postCreateCommand": "mise install && npx playwright install --only-shell",
   // Firewall init — script is bind-mounted from the project
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
   "waitFor": "postStartCommand"
@@ -120,10 +126,10 @@ Each project defines its own tool versions:
 ```toml
 [tools]
 bun = "1.3.8"
-# node is provided by the base image (node:22-trixie-slim).
+# node is provided by the base image (node:24-trixie-slim).
 # This entry is for CI environments where the base image isn't available.
 # Inside the devcontainer, mise detects Node is already on $PATH and skips installation.
-node = "22"
+node = "24"
 ```
 
 ### Optional: `.devcontainer/init-plugins.sh`
@@ -166,19 +172,52 @@ See the [devcontainer-claude-bun firewall script](../devcontainer-claude-bun/.de
 
 Mark as executable: `chmod +x init-firewall.sh`
 
-### Sandbox-only: `.devcontainer/claude-sandbox/.env.example`
+### Sandbox Authentication
 
-Template for sandbox authentication:
+The sandbox firewall blocks outbound traffic, so `claude login` (which opens a browser OAuth flow) won't work inside the container. Instead, generate a token on the host and inject it via environment variable.
 
+**Setup (one-time):**
+
+1. Generate a setup token on your host machine:
+   ```bash
+   claude setup-token
+   ```
+   This outputs a token string.
+
+2. Set it as a host environment variable (add to `~/.zshrc`, `~/.bashrc`, or equivalent):
+   ```bash
+   export CLAUDE_CODE_OAUTH_TOKEN="your-token-here"
+   ```
+
+3. Restart VS Code (or reload window) so it picks up the new env var.
+
+The sandbox `devcontainer.json` already injects this via `${localEnv:CLAUDE_CODE_OAUTH_TOKEN}`. Claude Code reads the env var automatically — no additional configuration inside the container.
+
+**Alternative — per-project `.env.local` file:**
+
+If you prefer file-based configuration over host env vars, add `runArgs` to the sandbox `devcontainer.json`:
+
+```jsonc
+"runArgs": ["--env-file", ".devcontainer/claude-sandbox/.env.local"],
+```
+
+Create `.env.local` from the template (git-ignored):
 ```bash
-# Claude Code authentication
-# Generate a token with: claude setup-token
-# Copy this file to .env.local and fill in your token:
+cp .devcontainer/claude-sandbox/.env.example .devcontainer/claude-sandbox/.env.local
+# Edit .env.local with your actual token
+```
+
+The `.env.example` template to check into your project:
+```bash
+# .devcontainer/claude-sandbox/.env.example
+# Claude Code authentication for sandbox containers.
+# Copy to .env.local and fill in your token:
 #   cp .env.example .env.local
+# Generate a token with: claude setup-token
 CLAUDE_CODE_OAUTH_TOKEN=your-token-here
 ```
 
-Add `.env.local` to `.gitignore`.
+Add `.env.local` to `.gitignore`. Note: Docker will fail to start if `.env.local` doesn't exist when using `--env-file`.
 
 ### Complete file structure
 
@@ -189,7 +228,7 @@ Add `.env.local` to `.gitignore`.
 └── claude-sandbox/
     ├── devcontainer.json          ← sandbox devcontainer
     ├── init-firewall.sh           ← firewall script (customize domain allowlist)
-    ├── .env.example               ← template for auth token
+    ├── .env.example               ← template for auth token (checked in)
     └── .env.local                 ← actual auth token (gitignored)
 ```
 
@@ -213,11 +252,22 @@ If your project has additional services, create volume mounts in `devcontainer.j
 
 ## Playwright Version Strategy
 
-The image bakes in a Playwright browser binary at a specific version (controlled by the `PLAYWRIGHT_VERSION` build arg). Daily rebuilds keep this reasonably current.
+The image uses a two-layer strategy so that any project can use any `@playwright/test` version:
 
-- If your project's `@playwright/test` version **matches** the image — zero startup cost, browser is ready
-- If your project's version **differs** — Playwright auto-downloads the correct browser on first test run (~10s graceful fallback)
-- This is a **best-effort optimization**, not a hard contract
+| Layer | What | Baked in image? | Version-sensitive? |
+|-------|------|-----------------|--------------------|
+| System deps (`install-deps`) | OS libraries (libgbm, libnss3, …) | Yes (needs root) | Stable across nearby versions |
+| Browser binary (`install --only-shell`) | Headless Chromium shell | Yes, as cache | Exact match required |
+
+**One-time project setup** — add this to your container creation command (`updateContentCommand` or `postCreateCommand`, as shown in [Quick Start](#quick-start)):
+
+```bash
+npx playwright install --only-shell
+```
+
+This is **idempotent** — if the cached binary already matches, it's a no-op (~0s). If the project's `@playwright/test` version differs from the image, it downloads the correct binary (~10s, once at container creation).
+
+The baked version is available at runtime via the `PLAYWRIGHT_VERSION` environment variable.
 
 ## Build Args
 
@@ -227,39 +277,85 @@ The image bakes in a Playwright browser binary at a specific version (controlled
 | `PLAYWRIGHT_VERSION` | `1.58.2` | Playwright browser binary version |
 | `AGENT_BROWSER_VERSION` | `latest` | agent-browser version (default target only) |
 
-## Building Locally
+## Building Locally / Local Fallback
+
+If the pre-built image is unavailable (GHCR outage, rate limits, or you need to test image changes), build from the [devcontainer-images](https://github.com/gatezh/devcontainer-images) source:
 
 ```bash
+# Clone the image source (one-time)
+git clone https://github.com/gatezh/devcontainer-images.git
+cd devcontainer-images/claude-code
+
 # Default variant
-docker build --target default -t claude-code:default .devcontainer
+docker build --target default -t claude-code:local .devcontainer
 
 # Sandbox variant
-docker build --target sandbox -t claude-code:sandbox .devcontainer
+docker build --target sandbox -t claude-code-sandbox:local .devcontainer
+```
 
-# Multi-platform
+Then update your project's `devcontainer.json` to use the local tag:
+
+```jsonc
+// Replace the GHCR reference:
+// "image": "ghcr.io/gatezh/devcontainer-images/claude-code:latest",
+// With the local build:
+"image": "claude-code:local",
+```
+
+Everything else (`mounts`, `containerEnv`, `updateContentCommand`, etc.) stays the same — the local image is identical to the pre-built one.
+
+### Extending the image for project-specific needs
+
+If you need to layer project-specific tools on top, create a thin Dockerfile in your project:
+
+```dockerfile
+# .devcontainer/Dockerfile
+FROM ghcr.io/gatezh/devcontainer-images/claude-code:latest
+# Project-specific additions
+RUN npm install -g your-tool
+```
+
+```jsonc
+// .devcontainer/devcontainer.json
+{
+  "build": { "dockerfile": "Dockerfile" },
+  // ... rest of config (same as Quick Start, minus the "image" key)
+}
+```
+
+This pulls the pre-built image as a base layer (cached after first pull) and adds your customizations on top.
+
+### Multi-platform build (maintainers)
+
+```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --target default \
   -t ghcr.io/gatezh/devcontainer-images/claude-code:latest \
   --push \
-  .devcontainer
+  claude-code/.devcontainer
 ```
 
 ## Startup Timeline
 
 ### Warm start (Playwright version matches image)
 ```
-Pull image ───────────────────── (cached)
-mise install (bun, hugo, etc.) ─ (~15s, downloads pre-built binaries)
-bun install ─────────────────── (~15s, cached in named volume)
-project setup ───────────────── (db:migrate, init-plugins, etc.)
-                                 Total: ~45s warm
+Pull image ──────────────────────── (cached)
+mise install (bun, hugo, etc.) ──── (~15s, downloads pre-built binaries)
+bun install ─────────────────────── (~15s, cached in named volume)
+playwright install --only-shell ─── (~0s, binary already cached — no-op)
+project setup ───────────────────── (db:migrate, init-plugins, etc.)
+                                     Total: ~45s warm
 ```
 
 ### Playwright version mismatch
 ```
-Same as above. First test run triggers browser download (~10s, one-time).
-Not a blocking startup cost — tests work, just slightly slower first run.
+Pull image ──────────────────────── (cached)
+mise install (bun, hugo, etc.) ──── (~15s)
+bun install ─────────────────────── (~15s)
+playwright install --only-shell ─── (~10s, downloads correct browser binary)
+project setup ───────────────────── (db:migrate, init-plugins, etc.)
+                                     Total: ~55s warm
 ```
 
 ## Resources
