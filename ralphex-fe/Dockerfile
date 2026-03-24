@@ -12,7 +12,9 @@ ARG TARGETARCH
 # ── System packages ──────────────────────────────────────────────────────────
 # - ca-certificates: SSL/TLS for HTTPS connections
 # - curl: downloading tools and installers
+# - docker.io: Docker CLI for container workflows (wrapper's --docker flag)
 # - dumb-init: PID 1 init for proper signal handling (used by /init.sh entrypoint)
+# - fzf: fuzzy finder (interactive selection in Claude Code and shell)
 # - git: version control
 # - golang-go: required for Hugo Modules to download and manage dependencies
 # - gosu: drop privileges to app user (Debian equivalent of Alpine's su-exec)
@@ -25,7 +27,9 @@ ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   curl \
+  docker.io \
   dumb-init \
+  fzf \
   git \
   golang-go \
   gosu \
@@ -100,8 +104,11 @@ RUN npm install -g @anthropic-ai/claude-code
 ENV BUN_INSTALL=/usr/local/bun
 ENV PATH="$BUN_INSTALL/bin:$PATH"
 
+# pipefail ensures curl failure is not masked by bash exit code
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}" && \
     bun --version
+SHELL ["/bin/sh", "-c"]
 
 # ── Hugo Extended (direct download with checksum verification) ───────────────
 # Kept from current ralphex-fe/Dockerfile — works natively on Debian (no gcompat).

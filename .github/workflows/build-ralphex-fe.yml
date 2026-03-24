@@ -20,7 +20,7 @@ jobs:
       version-tag: ${{ steps.versions.outputs.version-tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract versions from Dockerfile
         id: versions
