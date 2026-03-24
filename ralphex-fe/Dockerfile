@@ -75,7 +75,9 @@ ARG PLAYWRIGHT_VERSION
 # - ripgrep: fast code search
 # - tzdata: timezone data for container timezone configuration
 # - unzip: required by Bun install script on Linux
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   curl \
   dumb-init \
@@ -86,8 +88,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3 \
   ripgrep \
   tzdata \
-  unzip \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
+  unzip
 
 # ── App user (matches umputun/baseimage convention) ──────────────────────────
 # The ralphex docker-wrapper (ralphex-dk.sh) expects:
@@ -132,19 +133,22 @@ RUN chmod +x /init.sh /srv/init.sh
 
 WORKDIR /workspace
 
-# ── Playwright (native Debian — no Alpine hacks needed) ──────────────────────
-# Two-layer strategy from claude-code/.devcontainer/Dockerfile:
+# ── Playwright (Chromium only — headless testing for Claude Code via ralphex) ─
+# Only Chromium headless shell is needed; Firefox/WebKit skipped.
 #   1. System deps (install-deps) — heavy, needs root
-#   2. Browser binary (install --only-shell) — light, version-specific
-RUN npx -y playwright@${PLAYWRIGHT_VERSION} install-deps chromium
+#   2. Browser binary (install --only-shell chromium) — Chromium headless shell only
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    npx -y playwright@${PLAYWRIGHT_VERSION} install-deps chromium
 USER app
-RUN npx -y playwright@${PLAYWRIGHT_VERSION} install --only-shell
+RUN npx -y playwright@${PLAYWRIGHT_VERSION} install --only-shell chromium
 USER root
 
 # ── Claude Code CLI ──────────────────────────────────────────────────────────
 # npm install (not native installer) to avoid rate-limiting in parallel Docker builds.
 # See: claude-code/.devcontainer/Dockerfile for rationale.
-RUN npm install -g @anthropic-ai/claude-code
+RUN --mount=type=cache,target=/root/.npm \
+    npm install -g @anthropic-ai/claude-code
 
 # ── Bun ──────────────────────────────────────────────────────────────────────
 ENV BUN_INSTALL=/usr/local/bun
