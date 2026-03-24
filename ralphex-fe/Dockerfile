@@ -4,14 +4,64 @@ ARG GO_VERSION=1.24.4
 ARG HUGO_VERSION=0.156.0
 ARG PLAYWRIGHT_VERSION=1.58.2
 
+# ═════════════════════════════════════════════════════════════════════════════
+# Parallel download stages — BuildKit runs these concurrently
+# ═════════════════════════════════════════════════════════════════════════════
+
+# ── Go binary ────────────────────────────────────────────────────────────────
+# Pattern from: https://github.com/umputun/ralphex/blob/master/Dockerfile-go
+FROM alpine:3.21 AS go-download
+ARG GO_VERSION
+RUN set -eux; \
+    ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"; \
+    wget -qO- "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz" \
+      | tar -xz -C /usr/local
+
+# ── Docker CLI static binary ────────────────────────────────────────────────
+# Matches ralphex base's docker-cli — only the CLI, no daemon/containerd/runc.
+FROM alpine:3.21 AS docker-download
+ARG DOCKER_VERSION
+RUN set -eux; \
+    ARCH="$(uname -m)"; \
+    wget -qO- "https://download.docker.com/linux/static/stable/${ARCH}/docker-${DOCKER_VERSION}.tgz" \
+      | tar -xz -C /tmp; \
+    mv /tmp/docker/docker /usr/local/bin/docker
+
+# ── Hugo Extended with checksum verification ─────────────────────────────────
+FROM alpine:3.21 AS hugo-download
+ARG HUGO_VERSION
+ARG TARGETARCH
+RUN set -eux; \
+    wget -qO hugo.tar.gz \
+      "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz"; \
+    wget -qO hugo_checksums.txt \
+      "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_checksums.txt"; \
+    EXPECTED=$(grep "hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz" hugo_checksums.txt | cut -d' ' -f1); \
+    ACTUAL=$(sha256sum hugo.tar.gz | cut -d' ' -f1); \
+    if [ "$EXPECTED" != "$ACTUAL" ]; then \
+        echo "Hugo checksum mismatch: expected=$EXPECTED actual=$ACTUAL"; exit 1; \
+    fi; \
+    tar -xzf hugo.tar.gz -C /usr/local/bin/ hugo
+
+# ── Ralphex binary (latest from GitHub Releases) ────────────────────────────
+# Pattern from: claude-code/.devcontainer/Dockerfile
+FROM alpine:3.21 AS ralphex-download
+RUN apk add --no-cache curl jq
+RUN set -eux; \
+    ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"; \
+    VERSION=$(curl -fsSL https://api.github.com/repos/umputun/ralphex/releases/latest \
+      | jq -r '.tag_name' | sed 's/^v//'); \
+    curl -fsSL -o /tmp/ralphex.tar.gz \
+      "https://github.com/umputun/ralphex/releases/download/v${VERSION}/ralphex_${VERSION}_linux_${ARCH}.tar.gz"; \
+    tar -xzf /tmp/ralphex.tar.gz -C /usr/local/bin ralphex
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Final image
+# ═════════════════════════════════════════════════════════════════════════════
 FROM node:24-trixie-slim
 
 ARG BUN_VERSION
-ARG DOCKER_VERSION
-ARG GO_VERSION
-ARG HUGO_VERSION
 ARG PLAYWRIGHT_VERSION
-ARG TARGETARCH
 
 # ── System packages ──────────────────────────────────────────────────────────
 # - ca-certificates: SSL/TLS for HTTPS connections
@@ -25,7 +75,6 @@ ARG TARGETARCH
 # - ripgrep: fast code search
 # - tzdata: timezone data for container timezone configuration
 # - unzip: required by Bun install script on Linux
-# - wget: required to download Hugo Extended binary
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   curl \
@@ -38,7 +87,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ripgrep \
   tzdata \
   unzip \
-  wget \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ── App user (matches umputun/baseimage convention) ──────────────────────────
@@ -63,32 +111,15 @@ RUN groupadd -g 998 ping \
   && cp /usr/share/zoneinfo/${TIME_ZONE} /etc/localtime \
   && echo "${TIME_ZONE}" > /etc/timezone
 
-# ── Go (direct binary download, matching ralphex-go pattern) ─────────────────
-# Required for Hugo Modules. Downloaded from go.dev instead of apt golang-go
-# to avoid pulling ~200MB of Go source + build deps.
-# Pattern from: https://github.com/umputun/ralphex/blob/master/Dockerfile-go
+# ── Copy binaries from parallel download stages ─────────────────────────────
+COPY --from=go-download /usr/local/go /usr/local/go
+COPY --from=docker-download /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=hugo-download /usr/local/bin/hugo /usr/local/bin/hugo
+COPY --from=ralphex-download /usr/local/bin/ralphex /srv/ralphex
+
 ENV GOROOT=/usr/local/go \
     GOPATH=/home/app/go
 ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
-
-RUN set -eux; \
-    ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"; \
-    curl -fsSL -o /tmp/go.tar.gz "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz"; \
-    tar -xzf /tmp/go.tar.gz -C /usr/local; \
-    rm /tmp/go.tar.gz; \
-    go version
-
-# ── Docker CLI (static binary, matching ralphex base's docker-cli) ───────────
-# Only the CLI is needed for wrapper's --docker flag; avoids pulling the full
-# docker.io package (containerd, runc, iptables — ~55MB of unneeded deps).
-# Version pinned and refreshed on image rebuilds; static URL from download.docker.com.
-RUN set -eux; \
-    ARCH="$(uname -m)"; \
-    curl -fsSL -o /tmp/docker.tgz \
-      "https://download.docker.com/linux/static/stable/${ARCH}/docker-${DOCKER_VERSION}.tgz"; \
-    tar -xzf /tmp/docker.tgz --strip-components=1 -C /usr/local/bin docker/docker; \
-    rm /tmp/docker.tgz; \
-    docker --version
 
 # ── Entrypoint and init scripts ──────────────────────────────────────────────
 # /init.sh — entrypoint handling APP_UID remapping and privilege drop
@@ -100,20 +131,6 @@ COPY files/init-docker.sh /srv/init.sh
 RUN chmod +x /init.sh /srv/init.sh
 
 WORKDIR /workspace
-
-# ── Ralphex binary (latest from GitHub Releases) ─────────────────────────────
-# Pattern from: claude-code/.devcontainer/Dockerfile (lines 104-119)
-# The wrapper script calls /srv/ralphex as the container command.
-RUN set -eux; \
-    ARCH="$(uname -m)"; \
-    RALPHEX_ARCH=$(echo "$ARCH" | sed 's/x86_64/amd64/;s/aarch64/arm64/'); \
-    RALPHEX_VERSION=$(curl -fsSL https://api.github.com/repos/umputun/ralphex/releases/latest \
-      | jq -r '.tag_name' | sed 's/^v//'); \
-    curl -fsSL -o /tmp/ralphex.tar.gz \
-      "https://github.com/umputun/ralphex/releases/download/v${RALPHEX_VERSION}/ralphex_${RALPHEX_VERSION}_linux_${RALPHEX_ARCH}.tar.gz"; \
-    tar -xzf /tmp/ralphex.tar.gz -C /srv ralphex; \
-    rm /tmp/ralphex.tar.gz; \
-    chmod +x /srv/ralphex
 
 # ── Playwright (native Debian — no Alpine hacks needed) ──────────────────────
 # Two-layer strategy from claude-code/.devcontainer/Dockerfile:
@@ -138,28 +155,6 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}" && \
     bun --version
 SHELL ["/bin/sh", "-c"]
-
-# ── Hugo Extended (direct download with checksum verification) ───────────────
-# Kept from current ralphex-fe/Dockerfile — works natively on Debian (no gcompat).
-RUN set -eux; \
-    wget -O hugo.tar.gz "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz"; \
-    wget -O hugo_checksums.txt "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_checksums.txt"; \
-    EXPECTED_CHECKSUM=$(grep "hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz" hugo_checksums.txt | cut -d' ' -f1); \
-    if [ -z "$EXPECTED_CHECKSUM" ]; then \
-        echo "Error: Could not find checksum for hugo_extended_${HUGO_VERSION}_linux-${TARGETARCH}.tar.gz"; \
-        exit 1; \
-    fi; \
-    ACTUAL_CHECKSUM=$(sha256sum hugo.tar.gz | cut -d' ' -f1); \
-    if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then \
-        echo "Checksum verification failed for Hugo!"; \
-        echo "Expected: $EXPECTED_CHECKSUM"; \
-        echo "Actual:   $ACTUAL_CHECKSUM"; \
-        exit 1; \
-    fi; \
-    echo "Hugo checksum verified: $ACTUAL_CHECKSUM"; \
-    tar -xzf hugo.tar.gz -C /usr/local/bin/ hugo; \
-    rm hugo.tar.gz hugo_checksums.txt; \
-    hugo version
 
 # ── Environment ──────────────────────────────────────────────────────────────
 ENV RALPHEX_DOCKER=1 \
