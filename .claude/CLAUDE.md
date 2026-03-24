@@ -32,6 +32,7 @@ Dockerfiles for custom devcontainer images on GitHub Container Registry (ghcr.io
 
 ## Validation
 
+- **Before committing**, check which CI workflows in `.github/workflows/` will run against the changed files and run those checks locally first (e.g., Hadolint for Dockerfiles, linters for YAML/JS, etc.)
 - Validate YAML and Dockerfile syntax before committing
 - Verify on target platform — not just local macOS/Windows
 - Check tool version availability and command syntax from official docs:
