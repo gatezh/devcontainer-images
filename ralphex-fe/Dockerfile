@@ -1,10 +1,14 @@
 ARG BUN_VERSION=1.3.9
+ARG DOCKER_VERSION=29.3.0
+ARG GO_VERSION=1.24.4
 ARG HUGO_VERSION=0.156.0
 ARG PLAYWRIGHT_VERSION=1.58.2
 
 FROM node:24-trixie-slim
 
 ARG BUN_VERSION
+ARG DOCKER_VERSION
+ARG GO_VERSION
 ARG HUGO_VERSION
 ARG PLAYWRIGHT_VERSION
 ARG TARGETARCH
@@ -12,11 +16,9 @@ ARG TARGETARCH
 # ── System packages ──────────────────────────────────────────────────────────
 # - ca-certificates: SSL/TLS for HTTPS connections
 # - curl: downloading tools and installers
-# - docker.io: Docker CLI for container workflows (wrapper's --docker flag)
 # - dumb-init: PID 1 init for proper signal handling (used by /init.sh entrypoint)
 # - fzf: fuzzy finder (interactive selection in Claude Code and shell)
 # - git: version control
-# - golang-go: required for Hugo Modules to download and manage dependencies
 # - gosu: drop privileges to app user (Debian equivalent of Alpine's su-exec)
 # - jq: JSON processing
 # - python3: scripting (Claude Code uses python for ad-hoc scripts)
@@ -27,11 +29,9 @@ ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   curl \
-  docker.io \
   dumb-init \
   fzf \
   git \
-  golang-go \
   gosu \
   jq \
   python3 \
@@ -53,18 +53,42 @@ ENV APP_USER=app \
     DOCKER_GID=999 \
     TIME_ZONE=America/Chicago
 
-# Reserve GID 998 for ping to prevent conflicts (matches umputun/baseimage convention).
-# docker group may already exist from docker.io package — use -f to avoid failure,
-# then ensure it has the expected GID via groupmod.
+# Reserve GID 998 for ping to prevent conflicts (matches umputun/baseimage convention)
 RUN groupadd -g 998 ping \
-  && groupadd -f -g ${DOCKER_GID} docker \
-  && groupmod -g ${DOCKER_GID} docker \
+  && groupadd -g ${DOCKER_GID} docker \
   && useradd --no-log-init -m -s /bin/sh -u ${APP_UID} ${APP_USER} \
   && usermod -aG docker ${APP_USER} \
   && mkdir -p /srv /workspace \
   && chown -R ${APP_USER}:${APP_USER} /srv /workspace \
   && cp /usr/share/zoneinfo/${TIME_ZONE} /etc/localtime \
   && echo "${TIME_ZONE}" > /etc/timezone
+
+# ── Go (direct binary download, matching ralphex-go pattern) ─────────────────
+# Required for Hugo Modules. Downloaded from go.dev instead of apt golang-go
+# to avoid pulling ~200MB of Go source + build deps.
+# Pattern from: https://github.com/umputun/ralphex/blob/master/Dockerfile-go
+ENV GOROOT=/usr/local/go \
+    GOPATH=/home/app/go
+ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
+
+RUN set -eux; \
+    ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"; \
+    curl -fsSL -o /tmp/go.tar.gz "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz"; \
+    tar -xzf /tmp/go.tar.gz -C /usr/local; \
+    rm /tmp/go.tar.gz; \
+    go version
+
+# ── Docker CLI (static binary, matching ralphex base's docker-cli) ───────────
+# Only the CLI is needed for wrapper's --docker flag; avoids pulling the full
+# docker.io package (containerd, runc, iptables — ~55MB of unneeded deps).
+# Version pinned and refreshed on image rebuilds; static URL from download.docker.com.
+RUN set -eux; \
+    ARCH="$(uname -m)"; \
+    curl -fsSL -o /tmp/docker.tgz \
+      "https://download.docker.com/linux/static/stable/${ARCH}/docker-${DOCKER_VERSION}.tgz"; \
+    tar -xzf /tmp/docker.tgz --strip-components=1 -C /usr/local/bin docker/docker; \
+    rm /tmp/docker.tgz; \
+    docker --version
 
 # ── Entrypoint and init scripts ──────────────────────────────────────────────
 # /init.sh — entrypoint handling APP_UID remapping and privilege drop
