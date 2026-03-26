@@ -51,8 +51,8 @@ Copy the example files into your project's `.devcontainer/` directory and custom
 
 Copy these to your project's `.devcontainer/`:
 
-- [`docker-compose.yml`](examples/default/docker-compose.yml) — image reference with `pull_policy: always`
-- [`devcontainer.json`](examples/default/devcontainer.json) — full config with VS Code extensions, Claude Dark theme, fish shell, OXC formatter, node_modules volume isolation, and lifecycle commands
+- [`.devcontainer/docker-compose.yml`](.devcontainer/docker-compose.yml) — image reference with `pull_policy: always`
+- [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json) — full config with VS Code extensions, Claude Dark theme, fish shell, OXC formatter, node_modules volume isolation, and lifecycle commands
 
 **Key settings included:** Claude Dark theme with coral remote indicator, fish + bash terminal profiles, OXC formatter (with comments for switching to Biome/Prettier), node_modules/Claude config/fish history volume mounts, and `updateContentCommand` for mise/bun/Playwright setup.
 
@@ -60,8 +60,8 @@ Copy these to your project's `.devcontainer/`:
 
 Copy these to your project's `.devcontainer/claude-sandbox/`:
 
-- [`docker-compose.yml`](examples/sandbox/docker-compose.yml) — sandbox image reference
-- [`devcontainer.json`](examples/sandbox/devcontainer.json) — full config with `NET_ADMIN`/`NET_RAW` capabilities, Claude Dark theme, `claudeCode.allowDangerouslySkipPermissions`, node_modules volume isolation, firewall script bind mount, and `CLAUDE_CODE_OAUTH_TOKEN` injection
+- [`.devcontainer/claude-sandbox/docker-compose.yml`](.devcontainer/claude-sandbox/docker-compose.yml) — sandbox image reference
+- [`.devcontainer/claude-sandbox/devcontainer.json`](.devcontainer/claude-sandbox/devcontainer.json) — full config with `NET_ADMIN`/`NET_RAW` capabilities, Claude Dark theme, `claudeCode.allowDangerouslySkipPermissions`, node_modules volume isolation, firewall script bind mount, and `CLAUDE_CODE_OAUTH_TOKEN` injection
 
 **Sandbox differences from default:** `capAdd` for iptables, `postStartCommand` runs the firewall script, `claudeCode.allowDangerouslySkipPermissions` enabled, and OAuth token must be injected from the host (see [Sandbox Authentication](#sandbox-authentication)). Both variants use the same node_modules volume isolation pattern.
 
@@ -71,11 +71,11 @@ Projects consuming these images need the following files in their repository.
 
 ### Required: `.mise.toml` (project root)
 
-Only pin tools that affect project stability — dev infrastructure (rtk, ralphex, Claude Code) is pre-installed in the image at latest. See [`examples/mise.toml`](examples/mise.toml) for a template.
+Only pin tools that affect project stability — dev infrastructure (rtk, ralphex, Claude Code) is pre-installed in the image at latest. See [`mise.toml`](mise.toml) for a template.
 
 ### Optional: `.devcontainer/init-plugins.sh`
 
-Claude Code plugin initialization. Runs once at container creation. Idempotent. See [`examples/init-plugins.sh`](examples/init-plugins.sh) for a template.
+Claude Code plugin initialization. Runs once at container creation. Idempotent. See [`.devcontainer/init-plugins.sh`](.devcontainer/init-plugins.sh) for a template.
 
 Wire it into `postCreateCommand` in your `devcontainer.json`:
 
