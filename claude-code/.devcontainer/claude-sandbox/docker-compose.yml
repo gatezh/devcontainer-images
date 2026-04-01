@@ -2,7 +2,7 @@
 name: myproject-sandbox
 services:
   devcontainer:
-    image: ghcr.io/gatezh/devcontainer-images/claude-code-sandbox:latest
+    image: ghcr.io/gatezh/devcontainers/claude-code-sandbox:latest
     pull_policy: always
     volumes:
       - ../..:/workspace:cached

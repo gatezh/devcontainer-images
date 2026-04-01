@@ -2,7 +2,7 @@
 name: myproject
 services:
   devcontainer:
-    image: ghcr.io/gatezh/devcontainer-images/claude-code:latest
+    image: ghcr.io/gatezh/devcontainers/claude-code:latest
     pull_policy: always
     volumes:
       - ..:/workspace:cached
