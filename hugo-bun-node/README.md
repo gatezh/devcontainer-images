@@ -1,11 +1,12 @@
-# devcontainer-hugo-bun
+# hugo-bun-node
 
-A multiplatform development container image combining Hugo Extended and Bun runtime, optimized for modern static site development workflows.
+A multiplatform development container image combining Hugo Extended, Bun runtime, and Node.js LTS, optimized for modern static site development workflows with Cloudflare Workers support.
 
 ## 🌟 Features
 
 - **Hugo Extended** - Full-featured static site generator with extended capabilities
 - **Bun Runtime** - Fast JavaScript runtime, bundler, and package manager
+- **Node.js LTS** - Required for Cloudflare Workers and Node.js-dependent tooling
 - **Go** - Required for Hugo Modules dependency management
 - **Git** - Version control
 - **Zsh** - Modern shell with better VS Code integration
@@ -24,8 +25,8 @@ To build this multiplatform image, use Docker Buildx:
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/devcontainer-hugo-bun:hugo<HUGO_VERSION>-bun<BUN_VERSION>-alpine \
-  -t ghcr.io/<USERNAME>/devcontainer-hugo-bun:latest \
+  -t ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:hugo<HUGO_VERSION>-bun<BUN_VERSION>-node<NODE_VERSION>-alpine \
+  -t ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:latest \
   --push \
   .devcontainer
 ```
@@ -35,16 +36,17 @@ docker buildx build \
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/myusername/devcontainer-hugo-bun:hugo0.152.2-bun1.3.2-alpine \
-  -t ghcr.io/myusername/devcontainer-hugo-bun:latest \
+  -t ghcr.io/myusername/devcontainers/hugo-bun-node:hugo0.155.1-bun1.3.8-node24.13.0-alpine \
+  -t ghcr.io/myusername/devcontainers/hugo-bun-node:latest \
   --push \
   .devcontainer
 ```
 
 **Replace:**
 - `<USERNAME>` with your GitHub username or organization
-- `<HUGO_VERSION>` with the Hugo version (e.g., `0.152.2`)
-- `<BUN_VERSION>` with the Bun version (e.g., `1.3.2`)
+- `<HUGO_VERSION>` with the Hugo version (e.g., `0.155.1`)
+- `<BUN_VERSION>` with the Bun version (e.g., `1.3.8`)
+- `<NODE_VERSION>` with the Node.js version (e.g., `24.11.0`)
 
 **Note:** The `--push` flag requires you to be logged in to GitHub Container Registry:
 ```bash
@@ -60,7 +62,7 @@ When using this pre-built image, replace the `dockerFile` property with the `ima
 ```json
 {
   "name": "My Hugo Project",
-  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun:latest"
+  "image": "ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:latest"
 }
 ```
 
@@ -73,7 +75,7 @@ When using this pre-built image, replace the `dockerFile` property with the `ima
 to:
 ```json
 {
-  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun:latest"
+  "image": "ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:latest"
 }
 ```
 
@@ -82,7 +84,7 @@ to:
 ```json
 {
   "name": "My Hugo Project",
-  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun:hugo0.152.2-bun1.3.2-alpine"
+  "image": "ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:hugo0.155.1-bun1.3.8-node24.13.0-alpine"
 }
 ```
 
@@ -106,10 +108,11 @@ The development container comes pre-configured with the following extensions:
 
 ## 📋 Version Information
 
-The image uses specific versions of Hugo and Bun defined as build arguments:
+The image uses specific versions of Hugo, Bun, and Node.js defined as build arguments:
 
-- **Hugo Version**: Specified via `HUGO_VERSION` build arg (default: `0.152.2`)
-- **Bun Version**: Specified via `BUN_VERSION` build arg (default: `1.3.2`)
+- **Hugo Version**: Specified via `HUGO_VERSION` build arg (default: `0.155.1`)
+- **Bun Version**: Specified via `BUN_VERSION` build arg (default: `1.3.8`)
+- **Node.js Version**: Specified via `NODE_VERSION` build arg (default: `24.13.0`)
 - **Base Image**: `oven/bun:${BUN_VERSION}-alpine`
 
 ### Updating Versions
@@ -118,30 +121,35 @@ To build with different versions, use build arguments:
 
 ```bash
 docker buildx build \
-  --build-arg HUGO_VERSION=0.153.0 \
+  --build-arg HUGO_VERSION=0.156.0 \
   --build-arg BUN_VERSION=1.4.0 \
+  --build-arg NODE_VERSION=24.12.0 \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/devcontainer-hugo-bun:hugo0.153.0-bun1.4.0-alpine \
+  -t ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:hugo0.156.0-bun1.4.0-node24.12.0-alpine \
   --push \
   .devcontainer
 ```
 
 ## ⚠️ Important Notes
 
+### Node.js on Alpine Linux
+
+This image uses Node.js unofficial builds for Alpine Linux (musl libc). The binaries are downloaded from `unofficial-builds.nodejs.org` which provides musl-compatible Node.js builds.
+
+### Cloudflare Workers
+
+This image includes Node.js specifically for Cloudflare Workers development, which requires a Node.js environment for:
+- Running `wrangler` CLI
+- Building and deploying Workers
+- Local development with `wrangler dev`
+
 ### GitHub Actions Integration
 
 If you use this image with GitHub Actions for deployment, ensure version consistency:
 
-1. The Hugo and Bun versions in the Dockerfile are documented with comments
+1. The Hugo, Bun, and Node.js versions in the Dockerfile are documented with comments
 2. Update your GitHub Actions workflow (`.github/workflows/deploy.yml`) when changing versions
 3. Both environments should use the same versions to avoid inconsistencies
-
-Example comment in Dockerfile:
-```dockerfile
-# ℹ️ Same version is used in GitHub Actions deployment (.github/workflows/deploy.yml)
-# ⚠️ Remember to update GitHub Actions workflow if changing it here
-ARG HUGO_VERSION=0.152.2
-```
 
 ### gcompat Requirement
 
@@ -184,9 +192,26 @@ bun run build
 bun run index.ts
 ```
 
+### Using Node.js / npm
+
+```bash
+# Check Node.js version
+node --version
+
+# Check npm version
+npm --version
+
+# Install Cloudflare Wrangler
+npm install -g wrangler
+
+# Run Wrangler commands
+wrangler dev
+wrangler deploy
+```
+
 ## 📄 License
 
-This image configuration is part of the devcontainer-images repository.
+This image configuration is part of the devcontainers repository.
 
 ## 🤝 Contributing
 

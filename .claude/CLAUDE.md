@@ -1,6 +1,6 @@
 # Project Overview
 
-Dockerfiles for custom devcontainer images on GitHub Container Registry (ghcr.io). Each image provides a VS Code Dev Container for a specific development environment.
+Dockerfiles for custom devcontainer images on GitHub Container Registry (ghcr.io). Each image provides a development container for a specific environment. Published under `ghcr.io/gatezh/devcontainers/`.
 
 ## Platform Constraints
 
@@ -12,9 +12,12 @@ Dockerfiles for custom devcontainer images on GitHub Container Registry (ghcr.io
 
 ## Naming Conventions
 
-### Image names
-- Devcontainer: `devcontainer-{tool}` or `devcontainer-{tool}-{secondary}`
-- Standalone: `{base}-{variant}` (e.g., `ralphex-fe`)
+### Directory names
+- Named after the primary tool(s): `{tool}` or `{tool}-{secondary}` (e.g., `bun`, `hugo-bun`, `claude-code`)
+- No `devcontainer-` prefix — the repo name `devcontainers` provides that context
+
+### Image paths
+- All images: `ghcr.io/gatezh/devcontainers/{directory-name}` (e.g., `ghcr.io/gatezh/devcontainers/bun`)
 
 ### Version ARGs in Dockerfile
 - Place at top of file: `ARG {TOOL}_VERSION={version}`

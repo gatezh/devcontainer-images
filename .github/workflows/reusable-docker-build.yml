@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       image-name:
-        description: 'Image name (e.g. devcontainer-bun)'
+        description: 'Image name including namespace (e.g. devcontainers/bun)'
         required: true
         type: string
       context:

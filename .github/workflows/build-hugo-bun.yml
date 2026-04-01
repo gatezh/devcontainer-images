@@ -1,15 +1,15 @@
-name: Build devcontainer-hugo-bun
+name: Build hugo-bun
 
 on:
   push:
     branches:
       - master
     paths:
-      - 'devcontainer-hugo-bun/.devcontainer/Dockerfile'
+      - 'hugo-bun/.devcontainer/Dockerfile'
   workflow_dispatch:
 
 concurrency:
-  group: build-devcontainer-hugo-bun-${{ github.ref }}
+  group: build-hugo-bun-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -19,12 +19,12 @@ jobs:
       version-tag: ${{ steps.versions.outputs.version-tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract versions from Dockerfile
         id: versions
         run: |
-          DOCKERFILE="devcontainer-hugo-bun/.devcontainer/Dockerfile"
+          DOCKERFILE="hugo-bun/.devcontainer/Dockerfile"
           HUGO_VERSION=$(grep '^ARG HUGO_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
           BUN_VERSION=$(grep '^ARG BUN_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
           echo "version-tag=hugo${HUGO_VERSION}-bun${BUN_VERSION}-alpine" >> "$GITHUB_OUTPUT"
@@ -37,9 +37,9 @@ jobs:
       packages: write
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
-      image-name: devcontainer-hugo-bun
-      context: devcontainer-hugo-bun/.devcontainer
-      dockerfile: devcontainer-hugo-bun/.devcontainer/Dockerfile
+      image-name: devcontainers/hugo-bun
+      context: hugo-bun/.devcontainer
+      dockerfile: hugo-bun/.devcontainer/Dockerfile
       version-tag: ${{ needs.prepare.outputs.version-tag }}
       verify-command: 'bun --version && hugo version'
     secrets: inherit

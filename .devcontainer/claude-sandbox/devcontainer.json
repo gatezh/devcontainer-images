@@ -56,8 +56,8 @@
     }
   },
   "mounts": [
-    "source=devcontainer-images-sandbox-config-${devcontainerId},target=/home/node/.claude,type=volume",
-    "source=devcontainer-images-sandbox-fish-${devcontainerId},target=/home/node/.local/share/fish,type=volume",
+    "source=devcontainers-sandbox-config-${devcontainerId},target=/home/node/.claude,type=volume",
+    "source=devcontainers-sandbox-fish-${devcontainerId},target=/home/node/.local/share/fish,type=volume",
     // Mount firewall script into the expected path
     "source=${localWorkspaceFolder}/.devcontainer/claude-sandbox/init-firewall.sh,target=/usr/local/bin/init-firewall.sh,type=bind"
   ],

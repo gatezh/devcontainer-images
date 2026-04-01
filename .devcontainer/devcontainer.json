@@ -57,9 +57,9 @@
   },
   "mounts": [
     // Persist Claude Code configuration between container rebuilds
-    "source=devcontainer-images-claude-config-${devcontainerId},target=/home/node/.claude,type=volume",
+    "source=devcontainers-claude-config-${devcontainerId},target=/home/node/.claude,type=volume",
     // Persist fish shell history between container rebuilds
-    "source=devcontainer-images-fish-data-${devcontainerId},target=/home/node/.local/share/fish,type=volume"
+    "source=devcontainers-fish-data-${devcontainerId},target=/home/node/.local/share/fish,type=volume"
   ],
   "containerEnv": {
     "TZ": "${localEnv:TZ:America/Edmonton}",

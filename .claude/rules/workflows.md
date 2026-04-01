@@ -31,8 +31,8 @@ on:
   push:
     branches: [master]
     paths:
-      - '{image-name}/.devcontainer/Dockerfile'
-      - '{image-name}/.devcontainer/*.sh'
+      - '{name}/.devcontainer/Dockerfile'
+      - '{name}/.devcontainer/*.sh'
   workflow_dispatch:
 ```
 
@@ -43,8 +43,8 @@ on:
   push:
     branches: [master]
     paths:
-      - '{image-name}/Dockerfile'
-      - '{image-name}/files/**'
+      - '{name}/Dockerfile'
+      - '{name}/files/**'
   workflow_dispatch:
 ```
 

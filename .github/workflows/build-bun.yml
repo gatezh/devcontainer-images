@@ -1,16 +1,15 @@
-name: Build devcontainer-claude-bun
+name: Build bun
 
 on:
   push:
     branches:
       - master
     paths:
-      - 'devcontainer-claude-bun/.devcontainer/Dockerfile'
-      - 'devcontainer-claude-bun/.devcontainer/init-firewall.sh'
+      - 'bun/.devcontainer/Dockerfile'
   workflow_dispatch:
 
 concurrency:
-  group: build-devcontainer-claude-bun-${{ github.ref }}
+  group: build-bun-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,14 +19,14 @@ jobs:
       version-tag: ${{ steps.versions.outputs.version-tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract versions from Dockerfile
         id: versions
         run: |
-          DOCKERFILE="devcontainer-claude-bun/.devcontainer/Dockerfile"
+          DOCKERFILE="bun/.devcontainer/Dockerfile"
           BUN_VERSION=$(grep '^ARG BUN_VERSION=' "$DOCKERFILE" | cut -d'=' -f2)
-          echo "version-tag=bun${BUN_VERSION}-slim" >> "$GITHUB_OUTPUT"
+          echo "version-tag=bun${BUN_VERSION}-alpine" >> "$GITHUB_OUTPUT"
           echo "Bun: $BUN_VERSION"
 
   build:
@@ -37,9 +36,9 @@ jobs:
       packages: write
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
-      image-name: devcontainer-claude-bun
-      context: devcontainer-claude-bun/.devcontainer
-      dockerfile: devcontainer-claude-bun/.devcontainer/Dockerfile
+      image-name: devcontainers/bun
+      context: bun/.devcontainer
+      dockerfile: bun/.devcontainer/Dockerfile
       version-tag: ${{ needs.prepare.outputs.version-tag }}
       verify-command: 'bun --version'
     secrets: inherit

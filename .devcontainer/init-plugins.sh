@@ -1,5 +1,5 @@
 #!/bin/bash
-# Initialize Claude Code plugins for the devcontainer-images repo
+# Initialize Claude Code plugins for the devcontainers repo
 # This script is idempotent - safe to run multiple times
 
 set -euo pipefail

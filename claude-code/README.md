@@ -8,8 +8,8 @@ Projects consume these pre-built images and control their own tool versions via 
 
 | Variant | Image | Use Case |
 |---------|-------|----------|
-| **default** | `ghcr.io/gatezh/devcontainer-images/claude-code:latest` | Full dev environment with agent-browser and passwordless sudo |
-| **sandbox** | `ghcr.io/gatezh/devcontainer-images/claude-code-sandbox:latest` | Network-restricted environment with iptables firewall packages |
+| **default** | `ghcr.io/gatezh/devcontainers/claude-code:latest` | Full dev environment with agent-browser and passwordless sudo |
+| **sandbox** | `ghcr.io/gatezh/devcontainers/claude-code-sandbox:latest` | Network-restricted environment with iptables firewall packages |
 
 ## What's Included
 
@@ -247,12 +247,12 @@ The baked version is available at runtime via the `PLAYWRIGHT_VERSION` environme
 
 ## Building Locally / Local Fallback
 
-If the pre-built image is unavailable (GHCR outage, rate limits, or you need to test image changes), build from the [devcontainer-images](https://github.com/gatezh/devcontainer-images) source:
+If the pre-built image is unavailable (GHCR outage, rate limits, or you need to test image changes), build from the [devcontainers](https://github.com/gatezh/devcontainers) source:
 
 ```bash
 # Clone the image source (one-time)
-git clone https://github.com/gatezh/devcontainer-images.git
-cd devcontainer-images/claude-code
+git clone https://github.com/gatezh/devcontainers.git
+cd devcontainers/claude-code
 
 # Default variant
 docker build --target default -t claude-code:local .devcontainer
@@ -267,7 +267,7 @@ Then update your project's `docker-compose.yml` to use the local tag:
 services:
   devcontainer:
     # Replace the GHCR reference:
-    # image: ghcr.io/gatezh/devcontainer-images/claude-code:latest
+    # image: ghcr.io/gatezh/devcontainers/claude-code:latest
     # With the local build:
     image: claude-code:local
     # pull_policy no longer needed for local images
@@ -281,7 +281,7 @@ If you need to layer project-specific tools on top, create a thin Dockerfile and
 
 ```dockerfile
 # .devcontainer/Dockerfile
-FROM ghcr.io/gatezh/devcontainer-images/claude-code:latest
+FROM ghcr.io/gatezh/devcontainers/claude-code:latest
 # Project-specific additions
 RUN npm install -g your-tool
 ```
@@ -304,7 +304,7 @@ This pulls the pre-built image as a base layer (cached after first pull) and add
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --target default \
-  -t ghcr.io/gatezh/devcontainer-images/claude-code:latest \
+  -t ghcr.io/gatezh/devcontainers/claude-code:latest \
   --push \
   claude-code/.devcontainer
 ```
