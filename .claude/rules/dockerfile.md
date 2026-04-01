@@ -10,11 +10,11 @@ paths:
 All Dockerfiles must end with a single combined `LABEL` instruction:
 
 ```dockerfile
-LABEL org.opencontainers.image.source="https://github.com/{owner}/devcontainer-images" \
+LABEL org.opencontainers.image.source="https://github.com/{owner}/devcontainers" \
       org.opencontainers.image.description="{Brief description}" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.title="{image-name}" \
-      org.opencontainers.image.url="https://github.com/{owner}/devcontainer-images"
+      org.opencontainers.image.url="https://github.com/{owner}/devcontainers"
 ```
 
 ## Base Images
