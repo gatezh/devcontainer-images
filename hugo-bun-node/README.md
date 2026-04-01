@@ -1,4 +1,4 @@
-# devcontainer-hugo-bun-node
+# hugo-bun-node
 
 A multiplatform development container image combining Hugo Extended, Bun runtime, and Node.js LTS, optimized for modern static site development workflows with Cloudflare Workers support.
 
@@ -25,8 +25,8 @@ To build this multiplatform image, use Docker Buildx:
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/devcontainer-hugo-bun-node:hugo<HUGO_VERSION>-bun<BUN_VERSION>-node<NODE_VERSION>-alpine \
-  -t ghcr.io/<USERNAME>/devcontainer-hugo-bun-node:latest \
+  -t ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:hugo<HUGO_VERSION>-bun<BUN_VERSION>-node<NODE_VERSION>-alpine \
+  -t ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:latest \
   --push \
   .devcontainer
 ```
@@ -36,8 +36,8 @@ docker buildx build \
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/myusername/devcontainer-hugo-bun-node:hugo0.155.1-bun1.3.8-node24.13.0-alpine \
-  -t ghcr.io/myusername/devcontainer-hugo-bun-node:latest \
+  -t ghcr.io/myusername/devcontainers/hugo-bun-node:hugo0.155.1-bun1.3.8-node24.13.0-alpine \
+  -t ghcr.io/myusername/devcontainers/hugo-bun-node:latest \
   --push \
   .devcontainer
 ```
@@ -62,7 +62,7 @@ When using this pre-built image, replace the `dockerFile` property with the `ima
 ```json
 {
   "name": "My Hugo Project",
-  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun-node:latest"
+  "image": "ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:latest"
 }
 ```
 
@@ -75,7 +75,7 @@ When using this pre-built image, replace the `dockerFile` property with the `ima
 to:
 ```json
 {
-  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun-node:latest"
+  "image": "ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:latest"
 }
 ```
 
@@ -84,7 +84,7 @@ to:
 ```json
 {
   "name": "My Hugo Project",
-  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun-node:hugo0.155.1-bun1.3.8-node24.13.0-alpine"
+  "image": "ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:hugo0.155.1-bun1.3.8-node24.13.0-alpine"
 }
 ```
 
@@ -125,7 +125,7 @@ docker buildx build \
   --build-arg BUN_VERSION=1.4.0 \
   --build-arg NODE_VERSION=24.12.0 \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/devcontainer-hugo-bun-node:hugo0.156.0-bun1.4.0-node24.12.0-alpine \
+  -t ghcr.io/<USERNAME>/devcontainers/hugo-bun-node:hugo0.156.0-bun1.4.0-node24.12.0-alpine \
   --push \
   .devcontainer
 ```
@@ -211,7 +211,7 @@ wrangler deploy
 
 ## 📄 License
 
-This image configuration is part of the devcontainer-images repository.
+This image configuration is part of the devcontainers repository.
 
 ## 🤝 Contributing
 

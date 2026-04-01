@@ -2,6 +2,8 @@
 
 Standalone Docker image for running [ralphex](https://github.com/umputun/ralphex) via its docker-wrapper script. Bundles the full frontend development toolchain needed for ralphex-powered projects.
 
+> **Note:** This is not a devcontainer in the VS Code Dev Container spec sense (no `devcontainer.json`). It is a standalone Docker image used as a development environment for ralphex projects.
+
 This is a standalone image, not a devcontainer.
 
 ## Tools
@@ -23,7 +25,7 @@ This is a standalone image, not a devcontainer.
 ### Via ralphex docker-wrapper
 
 ```bash
-export RALPHEX_IMAGE=ghcr.io/gatezh/ralphex-fe:latest
+export RALPHEX_IMAGE=ghcr.io/gatezh/devcontainers/ralphex-fe:latest
 ralphex docs/plans/feature.md
 ```
 
@@ -34,7 +36,7 @@ docker run --rm \
   -e APP_UID=$(id -u) \
   -v ~/.claude:/mnt/claude:ro \
   -v $(pwd):/workspace \
-  ghcr.io/gatezh/ralphex-fe:latest
+  ghcr.io/gatezh/devcontainers/ralphex-fe:latest
 ```
 
 ## Building Locally

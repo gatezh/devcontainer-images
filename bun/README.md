@@ -1,4 +1,4 @@
-# devcontainer-bun
+# bun
 
 A multiplatform development container image with Bun runtime, optimized for modern JavaScript/TypeScript development workflows.
 
@@ -22,8 +22,8 @@ To build this multiplatform image, use Docker Buildx:
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/devcontainer-bun:bun<BUN_VERSION>-alpine \
-  -t ghcr.io/<USERNAME>/devcontainer-bun:latest \
+  -t ghcr.io/<USERNAME>/devcontainers/bun:bun<BUN_VERSION>-alpine \
+  -t ghcr.io/<USERNAME>/devcontainers/bun:latest \
   --push \
   .devcontainer
 ```
@@ -33,8 +33,8 @@ docker buildx build \
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/myusername/devcontainer-bun:bun1.3.5-alpine \
-  -t ghcr.io/myusername/devcontainer-bun:latest \
+  -t ghcr.io/myusername/devcontainers/bun:bun1.3.5-alpine \
+  -t ghcr.io/myusername/devcontainers/bun:latest \
   --push \
   .devcontainer
 ```
@@ -57,7 +57,7 @@ When using this pre-built image, replace the `dockerFile` property with the `ima
 ```json
 {
   "name": "My Bun Project",
-  "image": "ghcr.io/<USERNAME>/devcontainer-bun:latest"
+  "image": "ghcr.io/<USERNAME>/devcontainers/bun:latest"
 }
 ```
 
@@ -70,7 +70,7 @@ When using this pre-built image, replace the `dockerFile` property with the `ima
 to:
 ```json
 {
-  "image": "ghcr.io/<USERNAME>/devcontainer-bun:latest"
+  "image": "ghcr.io/<USERNAME>/devcontainers/bun:latest"
 }
 ```
 
@@ -79,7 +79,7 @@ to:
 ```json
 {
   "name": "My Bun Project",
-  "image": "ghcr.io/<USERNAME>/devcontainer-bun:bun1.3.5-alpine"
+  "image": "ghcr.io/<USERNAME>/devcontainers/bun:bun1.3.5-alpine"
 }
 ```
 
@@ -111,7 +111,7 @@ To build with a different version, use build arguments:
 docker buildx build \
   --build-arg BUN_VERSION=1.4.0 \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/devcontainer-bun:bun1.4.0-alpine \
+  -t ghcr.io/<USERNAME>/devcontainers/bun:bun1.4.0-alpine \
   --push \
   .devcontainer
 ```
@@ -142,7 +142,7 @@ bun run dev
 
 ## License
 
-This image configuration is part of the devcontainer-images repository.
+This image configuration is part of the devcontainers repository.
 
 ## Contributing
 

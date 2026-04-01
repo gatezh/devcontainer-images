@@ -1,4 +1,4 @@
-# Devcontainer Images
+# Devcontainers
 
 This repository contains Dockerfiles for custom Docker images hosted on GitHub Container Registry (ghcr.io).
 
@@ -7,9 +7,9 @@ This repository contains Dockerfiles for custom Docker images hosted on GitHub C
 ### Devcontainer Images
 
 - **[claude-code](./claude-code/README.md)** - Shared Claude Code devcontainer image (default + sandbox variants)
-- **[devcontainer-bun](./devcontainer-bun/README.md)** - Bun development container
-- **[devcontainer-claude-bun](./devcontainer-claude-bun/README.md)** - Claude Code development container with firewall sandbox
-- **[devcontainer-hugo-bun](./devcontainer-hugo-bun/README.md)** - Hugo Extended + Bun development container
+- **[bun](./bun/README.md)** - Bun development container
+- **[claude-bun](./claude-bun/README.md)** - Claude Code development container with firewall sandbox
+- **[hugo-bun](./hugo-bun/README.md)** - Hugo Extended + Bun development container
 
 ### Standalone Docker Images
 
@@ -20,7 +20,7 @@ This repository contains Dockerfiles for custom Docker images hosted on GitHub C
 Each subdirectory represents a Docker image project. Devcontainer images use the following structure:
 
 ```
-devcontainer-name/
+image-name/
 ├── .devcontainer/
 │   ├── Dockerfile          # Source of truth for the image
 │   └── devcontainer.json   # Dev container configuration (uses "build")
@@ -46,19 +46,19 @@ Shared devcontainer base image for Claude Code projects. Two variants from a sin
 ```jsonc
 // Default variant
 {
-  "image": "ghcr.io/gatezh/devcontainer-images/claude-code:latest"
+  "image": "ghcr.io/gatezh/devcontainers/claude-code:latest"
 }
 
 // Sandbox variant
 {
-  "image": "ghcr.io/gatezh/devcontainer-images/claude-code-sandbox:latest",
+  "image": "ghcr.io/gatezh/devcontainers/claude-code-sandbox:latest",
   "capAdd": ["NET_ADMIN", "NET_RAW"]
 }
 ```
 
 See the [claude-code README](./claude-code/README.md) for full setup guide.
 
-### devcontainer-bun
+### bun
 
 Bun development container for modern JavaScript/TypeScript development.
 
@@ -66,11 +66,11 @@ Bun development container for modern JavaScript/TypeScript development.
 
 ```json
 {
-  "image": "ghcr.io/<username>/devcontainer-bun:latest"
+  "image": "ghcr.io/<username>/devcontainers/bun:latest"
 }
 ```
 
-### devcontainer-claude-bun
+### claude-bun
 
 Claude Code development container with Bun runtime, Claude Code CLI, and a restrictive firewall sandbox.
 
@@ -78,13 +78,13 @@ Claude Code development container with Bun runtime, Claude Code CLI, and a restr
 
 ```json
 {
-  "image": "ghcr.io/<username>/devcontainer-claude-bun:latest",
+  "image": "ghcr.io/<username>/devcontainers/claude-bun:latest",
   "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh"
 }
 ```
 
-### devcontainer-hugo-bun
+### hugo-bun
 
 Hugo development container with Bun runtime.
 
@@ -92,7 +92,7 @@ Hugo development container with Bun runtime.
 
 ```json
 {
-  "image": "ghcr.io/<username>/devcontainer-hugo-bun:latest"
+  "image": "ghcr.io/<username>/devcontainers/hugo-bun:latest"
 }
 ```
 
@@ -104,14 +104,14 @@ Standalone Docker image based on ralphex with Bun 1.3.9, Hugo Extended 0.155.3, 
 
 ```bash
 # Pull and run interactively
-docker pull ghcr.io/<username>/ralphex-fe:latest
-docker run -it --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/ralphex-fe:latest
+docker pull ghcr.io/<username>/devcontainers/ralphex-fe:latest
+docker run -it --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/devcontainers/ralphex-fe:latest
 
 # Run Bun commands
-docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/ralphex-fe:latest bun run index.ts
+docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/<username>/devcontainers/ralphex-fe:latest bun run index.ts
 
 # Run Hugo commands
-docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/<username>/ralphex-fe:latest hugo server --bind 0.0.0.0
+docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/<username>/devcontainers/ralphex-fe:latest hugo server --bind 0.0.0.0
 
 ```
 
@@ -119,7 +119,7 @@ docker run --rm -v $(pwd):/workspace -w /workspace -p 1313:1313 ghcr.io/<usernam
 
 ### Devcontainer Image
 
-1. Create a new directory with your image name (e.g., `devcontainer-myimage/`)
+1. Create a new directory with your image name (e.g., `myimage/`)
 2. Add `.devcontainer/Dockerfile` with your image definition
 3. Add `.devcontainer/devcontainer.json` that references the Dockerfile
 4. Create a GitHub Actions workflow for the image

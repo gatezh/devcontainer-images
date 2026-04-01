@@ -1,4 +1,4 @@
-# devcontainer-hugo-bun
+# hugo-bun
 
 A multiplatform development container image combining Hugo Extended and Bun runtime, optimized for modern static site development workflows.
 
@@ -24,8 +24,8 @@ To build this multiplatform image, use Docker Buildx:
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/devcontainer-hugo-bun:hugo<HUGO_VERSION>-bun<BUN_VERSION>-alpine \
-  -t ghcr.io/<USERNAME>/devcontainer-hugo-bun:latest \
+  -t ghcr.io/<USERNAME>/devcontainers/hugo-bun:hugo<HUGO_VERSION>-bun<BUN_VERSION>-alpine \
+  -t ghcr.io/<USERNAME>/devcontainers/hugo-bun:latest \
   --push \
   .devcontainer
 ```
@@ -35,8 +35,8 @@ docker buildx build \
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/myusername/devcontainer-hugo-bun:hugo0.152.2-bun1.3.2-alpine \
-  -t ghcr.io/myusername/devcontainer-hugo-bun:latest \
+  -t ghcr.io/myusername/devcontainers/hugo-bun:hugo0.152.2-bun1.3.2-alpine \
+  -t ghcr.io/myusername/devcontainers/hugo-bun:latest \
   --push \
   .devcontainer
 ```
@@ -60,7 +60,7 @@ When using this pre-built image, replace the `dockerFile` property with the `ima
 ```json
 {
   "name": "My Hugo Project",
-  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun:latest"
+  "image": "ghcr.io/<USERNAME>/devcontainers/hugo-bun:latest"
 }
 ```
 
@@ -73,7 +73,7 @@ When using this pre-built image, replace the `dockerFile` property with the `ima
 to:
 ```json
 {
-  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun:latest"
+  "image": "ghcr.io/<USERNAME>/devcontainers/hugo-bun:latest"
 }
 ```
 
@@ -82,7 +82,7 @@ to:
 ```json
 {
   "name": "My Hugo Project",
-  "image": "ghcr.io/<USERNAME>/devcontainer-hugo-bun:hugo0.152.2-bun1.3.2-alpine"
+  "image": "ghcr.io/<USERNAME>/devcontainers/hugo-bun:hugo0.152.2-bun1.3.2-alpine"
 }
 ```
 
@@ -121,7 +121,7 @@ docker buildx build \
   --build-arg HUGO_VERSION=0.153.0 \
   --build-arg BUN_VERSION=1.4.0 \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<USERNAME>/devcontainer-hugo-bun:hugo0.153.0-bun1.4.0-alpine \
+  -t ghcr.io/<USERNAME>/devcontainers/hugo-bun:hugo0.153.0-bun1.4.0-alpine \
   --push \
   .devcontainer
 ```
@@ -186,7 +186,7 @@ bun run index.ts
 
 ## 📄 License
 
-This image configuration is part of the devcontainer-images repository.
+This image configuration is part of the devcontainers repository.
 
 ## 🤝 Contributing
 
