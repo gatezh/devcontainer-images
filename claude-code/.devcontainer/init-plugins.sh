@@ -16,6 +16,22 @@ else
     echo '{"hasCompletedOnboarding":true}' > "$HOME/.claude/.claude.json"
 fi
 
+# ── Claude Code marketplaces ────────────────────────────────────────────────
+# The official marketplace is auto-configured on first interactive launch, but
+# postCreateCommand runs before that — register explicitly so plugin install works.
+MARKETPLACES=(
+    "anthropics/claude-plugins-official"
+    "umputun/ralphex"
+)
+
+for marketplace in "${MARKETPLACES[@]}"; do
+    if claude plugin marketplace add "$marketplace" 2>&1; then
+        echo "✔ Marketplace added: $marketplace"
+    else
+        echo "⚠ Failed to add marketplace: $marketplace" >&2
+    fi
+done
+
 # ── Claude Code plugins ─────────────────────────────────────────────────────
 # Customize this list — remove plugins you don't use.
 PLUGINS=(
@@ -33,17 +49,27 @@ PLUGINS=(
 )
 
 for plugin in "${PLUGINS[@]}"; do
-    claude plugin install "$plugin" 2>/dev/null || true
+    if claude plugin install "$plugin" 2>&1; then
+        echo "✔ Installed: $plugin"
+    else
+        echo "⚠ Failed to install: $plugin" >&2
+    fi
 done
 
 # ── Playwright MCP: use Chromium on ARM64 (#64) ─────────────────────────────
 # @playwright/mcp defaults to --browser chrome, which has no Linux ARM64 builds.
 # Patch the plugin config to use chromium instead. No-op on AMD64.
-PLAYWRIGHT_MCP_CONFIG="$HOME/.claude/plugins/marketplaces/claude-plugins-official/external_plugins/playwright/.mcp.json"
-if [ "$(uname -m)" = "aarch64" ] && [ -f "$PLAYWRIGHT_MCP_CONFIG" ]; then
-    jq '.playwright.args = ["@playwright/mcp@latest", "--browser", "chromium"]' \
-        "$PLAYWRIGHT_MCP_CONFIG" > /tmp/playwright-mcp.json \
-        && mv /tmp/playwright-mcp.json "$PLAYWRIGHT_MCP_CONFIG"
+# Plugins run from the cache dir (~/.claude/plugins/cache), not the marketplace
+# source dir. The cache path includes a version hash — resolve via find.
+if [ "$(uname -m)" = "aarch64" ]; then
+    PLAYWRIGHT_MCP_CONFIG=$(find "$HOME/.claude/plugins/cache" \
+        -path "*/playwright*/.mcp.json" -print -quit 2>/dev/null)
+    if [ -n "$PLAYWRIGHT_MCP_CONFIG" ]; then
+        jq '.playwright.args = ["@playwright/mcp@latest", "--browser", "chromium"]' \
+            "$PLAYWRIGHT_MCP_CONFIG" > /tmp/playwright-mcp.json \
+            && mv /tmp/playwright-mcp.json "$PLAYWRIGHT_MCP_CONFIG"
+        echo "✔ Playwright MCP patched for ARM64 Chromium"
+    fi
 fi
 
 # ── rtk init (token-optimized CLI proxy) ────────────────────────────────────
