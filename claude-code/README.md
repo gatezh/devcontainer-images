@@ -230,7 +230,7 @@ bun add -d @playwright/test    # or: npm install -D @playwright/test
 **One-time project setup** — add this to your container creation command (`updateContentCommand` or `postCreateCommand`, as shown in [Quick Start](#quick-start)):
 
 ```bash
-npx playwright install --only-shell
+npx playwright install --only-shell chromium
 ```
 
 This is **idempotent** — if the cached binary already matches, it's a no-op (~0s). If the project's `@playwright/test` version differs from the image, it downloads the correct binary (~10s, once at container creation).
@@ -316,7 +316,7 @@ docker buildx build \
 Pull image ──────────────────────── (cached)
 mise install (bun, hugo, etc.) ──── (~15s, downloads pre-built binaries)
 bun install ─────────────────────── (~15s, cached in named volume)
-playwright install --only-shell ─── (~0s, binary already cached — no-op)
+playwright install --only-shell chromium  (~0s, binary already cached — no-op)
 project setup ───────────────────── (db:migrate, init-plugins, etc.)
                                      Total: ~45s warm
 ```
@@ -326,7 +326,7 @@ project setup ───────────────────── (d
 Pull image ──────────────────────── (cached)
 mise install (bun, hugo, etc.) ──── (~15s)
 bun install ─────────────────────── (~15s)
-playwright install --only-shell ─── (~10s, downloads correct browser binary)
+playwright install --only-shell chromium  (~10s, downloads correct browser binary)
 project setup ───────────────────── (db:migrate, init-plugins, etc.)
                                      Total: ~55s warm
 ```
