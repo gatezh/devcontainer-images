@@ -110,6 +110,6 @@
   // mise install reads .mise.toml and installs project-specific tool versions.
   // playwright install ensures the correct browser binary for the project's @playwright/test version
   // (idempotent — skips download if the image's cached binary already matches).
-  "updateContentCommand": "sudo find /workspace -maxdepth 4 -name node_modules -type d -exec chown node {} + && sudo chown -R node /home/node/.claude && mise install && bun install && npx playwright install --only-shell",
+  "updateContentCommand": "sudo find /workspace -maxdepth 4 -name node_modules -type d -exec chown node {} + && sudo chown -R node /home/node/.claude && mise install && bun install && npx playwright install --only-shell chromium",
   "waitFor": "postCreateCommand"
 }

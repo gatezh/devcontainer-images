@@ -142,7 +142,7 @@ COPY --from=ralphex-download /usr/local/bin/ralphex /usr/local/bin/ralphex
 #   1. System deps (install-deps) — heavy, needs root, version-stable across
 #      nearby releases. Baked into the image so projects don't need sudo.
 #   2. Browser binary (install --only-shell) — light, version-specific.
-#      Baked as a cache; projects MUST run `npx playwright install --only-shell`
+#      Baked as a cache; projects MUST run `npx playwright install --only-shell chromium`
 #      at container creation to ensure the binary matches their @playwright/test.
 #      That command is idempotent: no-op when versions match, ~10s download if not.
 USER root
