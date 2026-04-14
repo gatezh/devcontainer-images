@@ -75,8 +75,11 @@ fi
 # ── rtk init (token-optimized CLI proxy) ────────────────────────────────────
 # Global hook-first mode: installs only the PreToolUse rewrite hook to ~/.claude/,
 # no workspace artifacts (CLAUDE.md, .rtk/). Safe to run multiple times.
+# WORKAROUND: RTK ≥0.36.0 added a GDPR telemetry consent prompt that hangs in
+# non-interactive environments. timeout + RTK_TELEMETRY_DISABLED work around it.
+# Remove when upstream fixes it: https://github.com/rtk-ai/rtk/issues/1307
 if command -v rtk &>/dev/null; then
-    rtk init -g --hook-only --auto-patch 2>/dev/null || true
+    RTK_TELEMETRY_DISABLED=1 timeout 10 rtk init -g --hook-only --auto-patch 2>/dev/null || true
 fi
 
 # ── agent-browser skill ─────────────────────────────────────────────────────
