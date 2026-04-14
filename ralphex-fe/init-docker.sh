@@ -31,8 +31,11 @@ if [ -d /mnt/claude ]; then
     # ── RTK: ensure rewrite hook is configured ─────────────────────────────
     # Host mount usually brings the hook, but init idempotently to cover
     # standalone usage (no host mount). --hook-only avoids workspace artifacts.
+    # WORKAROUND: RTK ≥0.36.0 added a GDPR telemetry consent prompt that hangs
+    # in non-interactive environments. Remove when upstream fixes it:
+    # https://github.com/rtk-ai/rtk/issues/1307
     if command -v rtk >/dev/null 2>&1; then
-        gosu app rtk init -g --hook-only --auto-patch 2>/dev/null || true
+        RTK_TELEMETRY_DISABLED=1 gosu app timeout 10 rtk init -g --hook-only --auto-patch 2>/dev/null || true
     fi
 fi
 
