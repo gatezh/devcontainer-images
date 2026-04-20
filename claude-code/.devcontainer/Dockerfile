@@ -45,7 +45,6 @@ RUN set -eux; \
 FROM node:24-trixie-slim AS base
 
 ARG GIT_DELTA_VERSION=0.18.2
-ARG PLAYWRIGHT_VERSION=1.58.2
 
 # System packages shared by all targets
 # - ca-certificates: SSL/TLS for HTTPS connections
@@ -115,14 +114,15 @@ USER root
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl -sS https://starship.rs/install.sh | sh -s -- --yes
 RUN curl https://mise.run | sh \
-  && cp /root/.local/bin/mise /usr/local/bin/mise
+  && cp /root/.local/bin/mise /usr/local/bin/mise \
+  && rm -rf /root/.local
 SHELL ["/bin/sh", "-c"]
 
 # Configure starship and fish shell.
 # Mise is installed as a tool manager — projects run `mise install` at container
 # creation to install their specific tool versions from .mise.toml.
-# Node is NOT installed via mise — it's provided by the base image;
-# mise shims would shadow the base image's npx, breaking Playwright installation.
+# Node is NOT installed via mise — it's provided by the base image; mise shims
+# would shadow the base image's npx, breaking global npm-installed CLIs.
 USER node
 RUN mkdir -p /home/node/.config/fish \
   && starship preset no-runtime-versions -o /home/node/.config/starship.toml \
@@ -137,22 +137,6 @@ ENV MISE_TRUSTED_CONFIG_PATHS="/workspace"
 COPY --from=rtk-download /usr/local/bin/rtk /usr/local/bin/rtk
 COPY --from=ralphex-download /usr/local/bin/ralphex /usr/local/bin/ralphex
 
-# ── Playwright (headless shell for browser testing) ───────────────────────────
-# Two-layer strategy for multi-project compatibility:
-#   1. System deps (install-deps) — heavy, needs root, version-stable across
-#      nearby releases. Baked into the image so projects don't need sudo.
-#   2. Browser binary (install --only-shell) — light, version-specific.
-#      Baked as a cache; projects MUST run `npx playwright install --only-shell chromium`
-#      at container creation to ensure the binary matches their @playwright/test.
-#      That command is idempotent: no-op when versions match, ~10s download if not.
-USER root
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    npx -y playwright@${PLAYWRIGHT_VERSION} install-deps chromium
-USER node
-RUN npx -y playwright@${PLAYWRIGHT_VERSION} install --only-shell
-ENV PLAYWRIGHT_VERSION=${PLAYWRIGHT_VERSION}
-
 # ── Claude Code CLI ───────────────────────────────────────────────────────────
 # Using npm instead of the native installer (curl claude.ai/install.sh | bash).
 # The native installer is recommended for interactive use, but rate-limits (429)
@@ -161,10 +145,11 @@ ENV PLAYWRIGHT_VERSION=${PLAYWRIGHT_VERSION}
 # reasons" — Docker/CI parallel builds are exactly that reason.
 # See: https://code.claude.com/docs/en/getting-started#install-with-npm
 # Auto-updates don't matter here — the image rebuilds daily.
-USER root
-RUN --mount=type=cache,target=/root/.npm \
-    npm install -g @anthropic-ai/claude-code
-USER node
+#
+# Install as the node user so all files land with node ownership from the start.
+# A later `chown -R` in another layer would duplicate every file (overlayfs
+# treats an ownership change as a rewrite), adding hundreds of MB.
+RUN npm install -g @anthropic-ai/claude-code
 
 # ─── DEFAULT — full dev environment ───────────────────────────────────────────
 FROM base AS default
@@ -177,23 +162,31 @@ RUN echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node-nopasswd \
   && chmod 0440 /etc/sudoers.d/node-nopasswd
 USER node
 
-# agent-browser: headless browser automation for AI agents
-# amd64: Chrome for Testing (Google's official automation channel)
-# arm64: system Chromium (Chrome for Testing has no ARM64 Linux builds)
-ARG AGENT_BROWSER_VERSION=latest
+# System Chromium + fonts for headless browser testing.
+# - chromium: used by Playwright and agent-browser via
+#   PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH (see .claude/rules/dockerfile.md).
+# - fonts-freefont-ttf: baseline fonts for headless rendering.
+# Kept out of the base stage so the sandbox target stays lean.
 USER root
-RUN --mount=type=cache,target=/root/.npm \
-    --mount=type=cache,target=/var/cache/apt,sharing=locked \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    npm install -g agent-browser@${AGENT_BROWSER_VERSION} \
-  && ARCH=$(dpkg --print-architecture) \
-  && if [ "$ARCH" = "amd64" ]; then \
-       agent-browser install --with-deps; \
-     else \
-       apt-get update && apt-get install -y --no-install-recommends chromium; \
-     fi \
-  && chown -R node:node /usr/local/share/npm-global
+    apt-get update && apt-get install -y --no-install-recommends \
+      chromium \
+      fonts-freefont-ttf
 USER node
+
+# Use the apt-installed chromium instead of Playwright-managed browsers.
+# Avoids version coupling between @playwright/mcp (alpha playwright-core builds)
+# and cached browser binaries. Projects using @playwright/test must point their
+# playwright.config.ts at process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH.
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+
+# agent-browser: headless browser automation for AI agents.
+# Uses the apt-installed chromium above.
+# Installed as the node user (see claude-code install above for rationale).
+ARG AGENT_BROWSER_VERSION=latest
+RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION}
 
 LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainers" \
       org.opencontainers.image.description="Claude Code devcontainer — full dev environment with agent-browser, Playwright, and passwordless sudo" \

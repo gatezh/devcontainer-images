@@ -21,9 +21,8 @@ Projects consume these pre-built images and control their own tool versions via 
 | Mise | The tool manager itself (not the tools) | Projects run `mise install` at container creation for their tool versions |
 | rtk, ralphex | Always-latest from GitHub Releases | Dev infrastructure (like Claude Code) — no version pinning needed in projects |
 | Claude Code | npm global install | npm avoids rate limiting that affects the native installer in parallel CI builds |
-| Playwright | System deps + browser binary at a pinned version | See [Playwright version strategy](#playwright-version-strategy) |
 
-**Default-only:** passwordless sudo, agent-browser + full Chromium
+**Default-only:** passwordless sudo, agent-browser, system Chromium (used by Playwright via `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`)
 
 **Sandbox-only:** iptables, ipset, iproute2, dnsutils, aggregate, firewall sudo rule
 
@@ -56,7 +55,7 @@ Copy these to your project's `.devcontainer/`:
 - [`.devcontainer/docker-compose.yml`](.devcontainer/docker-compose.yml) — image reference with `pull_policy: always`
 - [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json) — full config with VS Code extensions, fish shell, OXC formatter, node_modules volume isolation, and lifecycle commands
 
-**Key settings included:** fish + bash terminal profiles, OXC formatter (with comments for switching to Biome/Prettier), node_modules/Claude config/fish history volume mounts, and `updateContentCommand` for mise/bun/Playwright setup.
+**Key settings included:** fish + bash terminal profiles, OXC formatter (with comments for switching to Biome/Prettier), node_modules/Claude config/fish history volume mounts, and `updateContentCommand` for mise/bun setup.
 
 ### Sandbox variant
 
@@ -212,37 +211,46 @@ The template only mounts root `node_modules` by default. For monorepo projects, 
 
 The `sudo find` in `updateContentCommand` chowns all `node_modules` directories in one pass, so additional mounts are handled automatically.
 
-## Playwright Version Strategy
+## Playwright Strategy
 
-The image uses a two-layer strategy so that any project can use any `@playwright/test` version:
+The image uses the system `chromium` package (apt-installed in the `default`
+target) instead of Playwright-managed browser binaries. This avoids version
+coupling between `@playwright/mcp` (alpha `playwright-core` builds) and cached
+binaries, and keeps the image significantly smaller than shipping a
+Playwright-managed Chromium per rebuild.
 
-| Layer | What | Baked in image? | Version-sensitive? |
-|-------|------|-----------------|--------------------|
-| System deps (`install-deps`) | OS libraries (libgbm, libnss3, …) | Yes (needs root) | Stable across nearby versions |
-| Browser binary (`install --only-shell`) | Headless Chromium shell | Yes, as cache | Exact match required |
-
-**Prerequisite:** Your project must have `@playwright/test` in `devDependencies`. Without it, `npx` will prompt interactively to download the `playwright` package, which hangs container creation (no TTY). Pin it to the image's baked version (check `$PLAYWRIGHT_VERSION`) or your preferred version:
-
-```bash
-bun add -d @playwright/test    # or: npm install -D @playwright/test
-```
-
-**One-time project setup** — add this to your container creation command (`updateContentCommand` or `postCreateCommand`, as shown in [Quick Start](#quick-start)):
+The Dockerfile sets:
 
 ```bash
-npx playwright install --only-shell chromium
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 ```
 
-This is **idempotent** — if the cached binary already matches, it's a no-op (~0s). If the project's `@playwright/test` version differs from the image, it downloads the correct binary (~10s, once at container creation).
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` is a project convention — Playwright
+does **not** read it automatically. Each project's `playwright.config.ts`
+must honor it:
 
-The baked version is available at runtime via the `PLAYWRIGHT_VERSION` environment variable.
+```ts
+// playwright.config.ts
+export default defineConfig({
+  use: {
+    launchOptions: {
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+    },
+  },
+});
+```
+
+**Sandbox note:** `chromium` is installed only in the `default` target.
+Projects using the `sandbox` image that need browser testing should add
+chromium themselves (via a thin downstream Dockerfile or container
+`postStart`).
 
 ## Build Args
 
 | Arg | Default | Description |
 |-----|---------|-------------|
 | `GIT_DELTA_VERSION` | `0.18.2` | git-delta version |
-| `PLAYWRIGHT_VERSION` | `1.58.2` | Playwright browser binary version |
 | `AGENT_BROWSER_VERSION` | `latest` | agent-browser version (default target only) |
 
 ## Building Locally / Local Fallback
@@ -311,25 +319,16 @@ docker buildx build \
 
 ## Startup Timeline
 
-### Warm start (Playwright version matches image)
 ```
 Pull image ──────────────────────── (cached)
 mise install (bun, hugo, etc.) ──── (~15s, downloads pre-built binaries)
 bun install ─────────────────────── (~15s, cached in named volume)
-playwright install --only-shell chromium  (~0s, binary already cached — no-op)
 project setup ───────────────────── (db:migrate, init-plugins, etc.)
                                      Total: ~45s warm
 ```
 
-### Playwright version mismatch
-```
-Pull image ──────────────────────── (cached)
-mise install (bun, hugo, etc.) ──── (~15s)
-bun install ─────────────────────── (~15s)
-playwright install --only-shell chromium  (~10s, downloads correct browser binary)
-project setup ───────────────────── (db:migrate, init-plugins, etc.)
-                                     Total: ~55s warm
-```
+Chromium is baked into the image via apt — no per-container browser
+download step required.
 
 ## Resources
 

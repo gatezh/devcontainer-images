@@ -108,8 +108,8 @@
   // sudo chown fixes volume ownership — safety net in case Docker volume population didn't apply.
   // The find command chowns all node_modules volume mount points in one pass.
   // mise install reads .mise.toml and installs project-specific tool versions.
-  // playwright install ensures the correct browser binary for the project's @playwright/test version
-  // (idempotent — skips download if the image's cached binary already matches).
-  "updateContentCommand": "sudo find /workspace -maxdepth 4 -name node_modules -type d -exec chown node {} + && sudo chown -R node /home/node/.claude && mise install && bun install && npx playwright install --only-shell chromium",
+  // Chromium is baked into the image via apt — no playwright install step needed.
+  // Projects' playwright.config.ts should use process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH.
+  "updateContentCommand": "sudo find /workspace -maxdepth 4 -name node_modules -type d -exec chown node {} + && sudo chown -R node /home/node/.claude && mise install && bun install",
   "waitFor": "postCreateCommand"
 }

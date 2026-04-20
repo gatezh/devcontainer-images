@@ -120,9 +120,10 @@
     // injected from the host. See "Sandbox Authentication" section in README.
     "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"
   },
-  // Runs before postStartCommand (firewall), so network is still available for browser downloads.
   // The find command chowns all node_modules volume mount points in one pass.
-  "postCreateCommand": "sudo find /workspace -maxdepth 4 -name node_modules -type d -exec chown node {} + && sudo chown -R node /home/node/.claude && mise install && bun install && npx playwright install --only-shell chromium",
+  // Note: the sandbox image does not include chromium — projects needing
+  // browser testing should install it via a downstream Dockerfile.
+  "postCreateCommand": "sudo find /workspace -maxdepth 4 -name node_modules -type d -exec chown node {} + && sudo chown -R node /home/node/.claude && mise install && bun install",
   // Firewall init — script is bind-mounted from the project
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
   "waitFor": "postStartCommand"
