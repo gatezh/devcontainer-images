@@ -1,0 +1,51 @@
+# Manually-triggered cleanup of old GHCR versions for the claude-code images.
+#
+# Scope: ghcr.io/gatezh/devcontainers/claude-code and
+#        ghcr.io/gatezh/devcontainers/claude-code-sandbox only.
+# Other packages in this repo (bun, hugo-bun, hugo-bun-node, ralphex-fe,
+# claude-bun) are unreachable from this workflow.
+#
+# Inputs are typed (number, boolean) workflow_dispatch values consumed only
+# as action `with:` parameters, never interpolated into shell commands, so
+# command-injection from event payloads does not apply here.
+#
+# One-time setup: each target package must grant this repository the "Admin"
+# role under Package Settings -> Manage Actions access (GHCR UI). Without
+# this, deletions return 403.
+name: Cleanup claude-code GHCR versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      retention-days:
+        description: "Delete versions older than this many days"
+        type: number
+        default: 90
+      dry-run:
+        description: "Preview deletions without actually deleting"
+        type: boolean
+        default: true
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    name: Cleanup ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [claude-code, claude-code-sandbox]
+    steps:
+      - name: Delete old container versions
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: gatezh
+          package: devcontainers/${{ matrix.package }}
+          older-than: ${{ inputs.retention-days }} days
+          delete-tags: '*'
+          delete-untagged: true
+          exclude-tags: latest
+          dry-run: ${{ inputs.dry-run }}
