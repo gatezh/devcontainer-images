@@ -22,7 +22,9 @@ Projects consume these pre-built images and control their own tool versions via 
 | rtk, ralphex | Always-latest from GitHub Releases | Dev infrastructure (like Claude Code) — no version pinning needed in projects |
 | Claude Code | npm global install | npm avoids rate limiting that affects the native installer in parallel CI builds |
 
-**Default-only:** passwordless sudo, agent-browser, system Chromium (used by Playwright via `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`)
+**Both targets:** system Chromium + `fonts-freefont-ttf` (used by Playwright and the Playwright MCP plugin via `/usr/bin/chromium`)
+
+**Default-only:** passwordless sudo, agent-browser
 
 **Sandbox-only:** iptables, ipset, iproute2, dnsutils, aggregate, firewall sudo rule
 
@@ -76,17 +78,20 @@ Projects consuming these images need the following files in their repository.
 
 Only pin tools that affect project stability — dev infrastructure (rtk, ralphex, Claude Code) is pre-installed in the image at latest. See [`mise.toml`](mise.toml) for a template.
 
-### Optional: `.devcontainer/init-plugins.sh`
+### Optional: `.devcontainer/init-plugins.sh` and `.devcontainer/patch-playwright-mcp.sh`
 
-Claude Code plugin initialization. Runs once at container creation. Idempotent. See [`.devcontainer/init-plugins.sh`](.devcontainer/init-plugins.sh) for a template.
+Claude Code plugin initialization. `init-plugins.sh` registers marketplaces, installs plugins, and (via `patch-playwright-mcp.sh`) rewrites every cached Playwright MCP `.mcp.json` to launch the system chromium. Both scripts are idempotent. See [`.devcontainer/init-plugins.sh`](.devcontainer/init-plugins.sh) and [`.devcontainer/patch-playwright-mcp.sh`](.devcontainer/patch-playwright-mcp.sh) for templates.
 
-Wire it into `postCreateCommand` in your `devcontainer.json`:
+Wire them into `devcontainer.json`:
 
 ```jsonc
-"postCreateCommand": "bash .devcontainer/init-plugins.sh"
+"postCreateCommand": "bash .devcontainer/init-plugins.sh",
+"postStartCommand":  "bash .devcontainer/patch-playwright-mcp.sh"
 ```
 
-Mark as executable: `chmod +x init-plugins.sh`
+`postStartCommand` re-runs the patch on every container start so plugin auto-updates between sessions cannot leave MCP pointing at the missing chrome channel. See the [Playwright Strategy](#playwright-strategy) section.
+
+Mark as executable: `chmod +x init-plugins.sh patch-playwright-mcp.sh`
 
 ### Sandbox-only: `.devcontainer/claude-sandbox/init-firewall.sh`
 
@@ -178,6 +183,7 @@ The template includes extensions for Claude Code, Bun, OXC, Tailwind, YAML, Dock
 ├── devcontainer.json              ← default devcontainer
 ├── docker-compose.yml             ← default compose (image + pull_policy)
 ├── init-plugins.sh                ← Claude Code plugin setup (optional)
+├── patch-playwright-mcp.sh        ← Playwright MCP .mcp.json patch (optional)
 └── claude-sandbox/
     ├── devcontainer.json          ← sandbox devcontainer
     ├── docker-compose.yml         ← sandbox compose (image + pull_policy)
@@ -213,11 +219,12 @@ The `sudo find` in `updateContentCommand` chowns all `node_modules` directories 
 
 ## Playwright Strategy
 
-The image uses the system `chromium` package (apt-installed in the `default`
-target) instead of Playwright-managed browser binaries. This avoids version
-coupling between `@playwright/mcp` (alpha `playwright-core` builds) and cached
+Both image variants ship the system `chromium` package (apt-installed)
+instead of Playwright-managed browser binaries. This avoids version coupling
+between `@playwright/mcp` (alpha `playwright-core` builds) and cached
 binaries, and keeps the image significantly smaller than shipping a
-Playwright-managed Chromium per rebuild.
+Playwright-managed Chromium per rebuild. Sandbox needs it baked in because
+the firewall blocks `deb.debian.org` at runtime.
 
 The Dockerfile sets:
 
@@ -241,10 +248,38 @@ export default defineConfig({
 });
 ```
 
-**Sandbox note:** `chromium` is installed only in the `default` target.
-Projects using the `sandbox` image that need browser testing should add
-chromium themselves (via a thin downstream Dockerfile or container
-`postStart`).
+### Playwright MCP plugin
+
+The `playwright@claude-plugins-official` plugin's `@playwright/mcp` defaults
+to the `chrome` channel (`/opt/google/chrome/chrome`), which the image does
+not ship. The included `patch-playwright-mcp.sh` rewrites every cached
+`.mcp.json` under `~/.claude/plugins/cache/` to use the system chromium:
+
+```json
+{
+  "playwright": {
+    "command": "npx",
+    "args": [
+      "@playwright/mcp@latest",
+      "--browser", "chromium",
+      "--executable-path", "/usr/bin/chromium",
+      "--no-sandbox",
+      "--headless"
+    ]
+  }
+}
+```
+
+`init-plugins.sh` invokes the patch script at `postCreateCommand`, and the
+template `devcontainer.json` files run it again at `postStartCommand` so
+plugin auto-updates between sessions cannot leave MCP pointing at the
+missing chrome channel.
+
+To debug, inspect the patched configs after a container start:
+
+```bash
+cat ~/.claude/plugins/cache/claude-plugins-official/playwright/*/.mcp.json
+```
 
 ## Build Args
 

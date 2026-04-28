@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - "claude-code/.devcontainer/Dockerfile"
+      - "claude-code/.devcontainer/*.sh"
   schedule:
     - cron: '13 11 * * *'
   workflow_dispatch:

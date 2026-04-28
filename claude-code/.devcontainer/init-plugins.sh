@@ -56,21 +56,11 @@ for plugin in "${PLUGINS[@]}"; do
     fi
 done
 
-# ── Playwright MCP: use Chromium on ARM64 (#64) ─────────────────────────────
-# @playwright/mcp defaults to --browser chrome, which has no Linux ARM64 builds.
-# Patch the plugin config to use chromium instead. No-op on AMD64.
-# Plugins run from the cache dir (~/.claude/plugins/cache), not the marketplace
-# source dir. The cache path includes a version hash — resolve via find.
-if [ "$(uname -m)" = "aarch64" ]; then
-    PLAYWRIGHT_MCP_CONFIG=$(find "$HOME/.claude/plugins/cache" \
-        -path "*/playwright*/.mcp.json" -print -quit 2>/dev/null)
-    if [ -n "$PLAYWRIGHT_MCP_CONFIG" ]; then
-        jq '.playwright.args = ["@playwright/mcp@latest", "--browser", "chromium"]' \
-            "$PLAYWRIGHT_MCP_CONFIG" > /tmp/playwright-mcp.json \
-            && mv /tmp/playwright-mcp.json "$PLAYWRIGHT_MCP_CONFIG"
-        echo "✔ Playwright MCP patched for ARM64 Chromium"
-    fi
-fi
+# ── Playwright MCP: route every cached .mcp.json to system chromium ─────────
+# Universal across arches (no Chrome stable binary in either default or sandbox).
+# Patch logic lives in patch-playwright-mcp.sh so it can also be invoked from
+# postStartCommand to catch plugin auto-updates between sessions (#85).
+bash "$(dirname "$0")/patch-playwright-mcp.sh"
 
 # ── rtk init (token-optimized CLI proxy) ────────────────────────────────────
 # Global hook-first mode: installs only the PreToolUse rewrite hook to ~/.claude/,

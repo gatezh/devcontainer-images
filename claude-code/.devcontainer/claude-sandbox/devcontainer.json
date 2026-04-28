@@ -121,10 +121,12 @@
     "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"
   },
   // The find command chowns all node_modules volume mount points in one pass.
-  // Note: the sandbox image does not include chromium — projects needing
-  // browser testing should install it via a downstream Dockerfile.
+  // Chromium is baked into the sandbox image (firewall blocks runtime install).
   "postCreateCommand": "sudo find /workspace -maxdepth 4 -name node_modules -type d -exec chown node {} + && sudo chown -R node /home/node/.claude && mise install && bun install",
-  // Firewall init — script is bind-mounted from the project
-  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  // Firewall init (bind-mounted from project) + re-patch the Playwright MCP
+  // plugin's .mcp.json. The patch runs on every start so plugin auto-updates
+  // between sessions don't leave MCP pointing at the missing chrome channel.
+  // See issue #85.
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh && bash .devcontainer/patch-playwright-mcp.sh",
   "waitFor": "postStartCommand"
 }
