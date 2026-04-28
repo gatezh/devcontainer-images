@@ -166,7 +166,8 @@ USER node
 # - chromium: used by Playwright and agent-browser via
 #   PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH (see .claude/rules/dockerfile.md).
 # - fonts-freefont-ttf: baseline fonts for headless rendering.
-# Kept out of the base stage so the sandbox target stays lean.
+# Mirrored into the sandbox stage too — the firewall blocks deb.debian.org,
+# so chromium cannot be added at runtime.
 USER root
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
@@ -199,7 +200,10 @@ CMD ["sleep", "infinity"]
 # ─── SANDBOX — network-restricted environment ─────────────────────────────────
 FROM base AS sandbox
 
-# Firewall packages (not needed in default target)
+# Firewall packages (not needed in default target).
+# Chromium + fonts are also baked in here — the sandbox firewall blocks
+# deb.debian.org, so they cannot be added at runtime. Required for the
+# Playwright MCP plugin to launch a browser.
 USER root
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
@@ -208,7 +212,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   ipset \
   iproute2 \
   dnsutils \
-  aggregate
+  aggregate \
+  chromium \
+  fonts-freefont-ttf
+
+# Use the apt-installed chromium instead of Playwright-managed browsers
+# (matches the default stage; see comment above the default chromium block).
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Passwordless sudo for node user — needed for:
 #   - "sudo chown" on named volumes (node_modules isolation)
