@@ -137,6 +137,13 @@ ENV MISE_TRUSTED_CONFIG_PATHS="/workspace"
 COPY --from=rtk-download /usr/local/bin/rtk /usr/local/bin/rtk
 COPY --from=ralphex-download /usr/local/bin/ralphex /usr/local/bin/ralphex
 
+# ── Playwright MCP patch script ──────────────────────────────────────────────
+# Universal logic with no project-specific config — bake into the image so
+# consumer projects don't carry a copy. Invoked from postCreateCommand
+# (init-plugins.sh) and postStartCommand (devcontainer.json) to re-patch
+# plugin auto-updates between sessions. See issue #87.
+COPY --chmod=0755 patch-playwright-mcp.sh /usr/local/bin/patch-playwright-mcp
+
 # ── Claude Code CLI ───────────────────────────────────────────────────────────
 # Using npm instead of the native installer (curl claude.ai/install.sh | bash).
 # The native installer is recommended for interactive use, but rate-limits (429)
