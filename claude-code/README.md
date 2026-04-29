@@ -78,20 +78,22 @@ Projects consuming these images need the following files in their repository.
 
 Only pin tools that affect project stability — dev infrastructure (rtk, ralphex, Claude Code) is pre-installed in the image at latest. See [`mise.toml`](mise.toml) for a template.
 
-### Optional: `.devcontainer/init-plugins.sh` and `.devcontainer/patch-playwright-mcp.sh`
+### Optional: `.devcontainer/init-plugins.sh`
 
-Claude Code plugin initialization. `init-plugins.sh` registers marketplaces, installs plugins, and (via `patch-playwright-mcp.sh`) rewrites every cached Playwright MCP `.mcp.json` to launch the system chromium. Both scripts are idempotent. See [`.devcontainer/init-plugins.sh`](.devcontainer/init-plugins.sh) and [`.devcontainer/patch-playwright-mcp.sh`](.devcontainer/patch-playwright-mcp.sh) for templates.
+Claude Code plugin initialization. `init-plugins.sh` registers marketplaces, installs plugins, and invokes the image-baked `/usr/local/bin/patch-playwright-mcp` to rewrite every cached Playwright MCP `.mcp.json` to launch the system chromium. Idempotent. See [`.devcontainer/init-plugins.sh`](.devcontainer/init-plugins.sh) for the template.
 
-Wire them into `devcontainer.json`:
+Wire into `devcontainer.json`:
 
 ```jsonc
 "postCreateCommand": "bash .devcontainer/init-plugins.sh",
-"postStartCommand":  "bash .devcontainer/patch-playwright-mcp.sh"
+"postStartCommand":  "/usr/local/bin/patch-playwright-mcp"
 ```
 
 `postStartCommand` re-runs the patch on every container start so plugin auto-updates between sessions cannot leave MCP pointing at the missing chrome channel. See the [Playwright Strategy](#playwright-strategy) section.
 
-Mark as executable: `chmod +x init-plugins.sh patch-playwright-mcp.sh`
+Mark as executable: `chmod +x init-plugins.sh`
+
+> **Why `init-plugins.sh` stays per-project but `patch-playwright-mcp` doesn't:** `init-plugins.sh` carries project-specific configuration (marketplace list, plugin list) — it's *meant* to be edited per project. The patch script has zero project-specific config and is identical across every consumer, so it's baked into the image and flows through the same daily-rebuild + `pull_policy: always` channel as the rest of the image. That boundary is the rule: project-specific config stays per-project; universal logic moves into the image.
 
 ### Sandbox-only: `.devcontainer/claude-sandbox/init-firewall.sh`
 
@@ -183,7 +185,6 @@ The template includes extensions for Claude Code, Bun, OXC, Tailwind, YAML, Dock
 ├── devcontainer.json              ← default devcontainer
 ├── docker-compose.yml             ← default compose (image + pull_policy)
 ├── init-plugins.sh                ← Claude Code plugin setup (optional)
-├── patch-playwright-mcp.sh        ← Playwright MCP .mcp.json patch (optional)
 └── claude-sandbox/
     ├── devcontainer.json          ← sandbox devcontainer
     ├── docker-compose.yml         ← sandbox compose (image + pull_policy)
@@ -252,8 +253,10 @@ export default defineConfig({
 
 The `playwright@claude-plugins-official` plugin's `@playwright/mcp` defaults
 to the `chrome` channel (`/opt/google/chrome/chrome`), which the image does
-not ship. The included `patch-playwright-mcp.sh` rewrites every cached
-`.mcp.json` under `~/.claude/plugins/cache/` to use the system chromium:
+not ship. The image bakes in `/usr/local/bin/patch-playwright-mcp` (built
+from [`patch-playwright-mcp.sh`](.devcontainer/patch-playwright-mcp.sh)),
+which rewrites every cached `.mcp.json` under `~/.claude/plugins/cache/`
+to use the system chromium:
 
 ```json
 {
@@ -270,7 +273,7 @@ not ship. The included `patch-playwright-mcp.sh` rewrites every cached
 }
 ```
 
-`init-plugins.sh` invokes the patch script at `postCreateCommand`, and the
+`init-plugins.sh` invokes the patch binary at `postCreateCommand`, and the
 template `devcontainer.json` files run it again at `postStartCommand` so
 plugin auto-updates between sessions cannot leave MCP pointing at the
 missing chrome channel.

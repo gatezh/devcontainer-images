@@ -76,19 +76,19 @@ jobs:
       matrix:
         include:
           - image-suffix: claude-code
-            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version"
+            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp"
             runner: ubuntu-24.04
             arch: amd64
           - image-suffix: claude-code
-            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version"
+            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp"
             runner: ubuntu-24.04-arm
             arch: arm64
           - image-suffix: claude-code-sandbox
-            verify-command: "claude --version && mise --version && fish --version && which iptables && rtk --version && ralphex --version"
+            verify-command: "claude --version && mise --version && fish --version && which iptables && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp"
             runner: ubuntu-24.04
             arch: amd64
           - image-suffix: claude-code-sandbox
-            verify-command: "claude --version && mise --version && fish --version && which iptables && rtk --version && ralphex --version"
+            verify-command: "claude --version && mise --version && fish --version && which iptables && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp"
             runner: ubuntu-24.04-arm
             arch: arm64
     runs-on: ${{ matrix.runner }}

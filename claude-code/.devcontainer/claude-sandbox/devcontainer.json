@@ -126,7 +126,7 @@
   // Firewall init (bind-mounted from project) + re-patch the Playwright MCP
   // plugin's .mcp.json. The patch runs on every start so plugin auto-updates
   // between sessions don't leave MCP pointing at the missing chrome channel.
-  // See issue #85.
-  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh && bash .devcontainer/patch-playwright-mcp.sh",
+  // See issues #85, #87.
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh && /usr/local/bin/patch-playwright-mcp",
   "waitFor": "postStartCommand"
 }

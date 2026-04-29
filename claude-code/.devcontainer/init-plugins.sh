@@ -58,9 +58,9 @@ done
 
 # ── Playwright MCP: route every cached .mcp.json to system chromium ─────────
 # Universal across arches (no Chrome stable binary in either default or sandbox).
-# Patch logic lives in patch-playwright-mcp.sh so it can also be invoked from
-# postStartCommand to catch plugin auto-updates between sessions (#85).
-bash "$(dirname "$0")/patch-playwright-mcp.sh"
+# The patch binary is baked into the image (see Dockerfile #87) and also runs
+# from postStartCommand to catch plugin auto-updates between sessions (#85).
+/usr/local/bin/patch-playwright-mcp
 
 # ── rtk init (token-optimized CLI proxy) ────────────────────────────────────
 # Global hook-first mode: installs only the PreToolUse rewrite hook to ~/.claude/,
