@@ -120,6 +120,12 @@ The sandbox firewall blocks vendor doc sites, so Claude Code can't `WebFetch` or
 
 Copy `.claude/skills/sandbox-fetch-docs/` into your project's `.claude/skills/` directory so Claude Code picks it up automatically.
 
+### Optional: Claude Code skill for Playwright
+
+Both image variants ship system chromium and the `/usr/local/bin/patch-playwright-mcp` binary, so Playwright MCP and `@playwright/test` work out of the box once a project's `playwright.config.ts` wires `launchOptions.executablePath` (see [Playwright Strategy](#playwright-strategy)). The image includes a [sandbox-playwright](.claude/skills/sandbox-playwright/SKILL.md) skill that teaches Claude Code how to drive both paths — discovery-driven, with no hardcoded project ports, service names, or test layouts.
+
+Copy `.claude/skills/sandbox-playwright/` into your project's `.claude/skills/` directory so Claude Code picks it up automatically.
+
 ### Sandbox Authentication
 
 The sandbox firewall blocks outbound traffic, so `claude login` (which opens a browser OAuth flow) won't work inside the container. Instead, generate a token on the host and inject it via environment variable.
@@ -194,8 +200,10 @@ The template includes extensions for Claude Code, Bun, OXC, Tailwind, YAML, Dock
 .claude/
 ├── settings.json                  ← permission allowlists for common dev commands
 └── skills/
-    └── sandbox-fetch-docs/
-        └── SKILL.md               ← teaches Claude Code to fetch docs within sandbox firewall
+    ├── sandbox-fetch-docs/
+    │   └── SKILL.md               ← teaches Claude Code to fetch docs within sandbox firewall
+    └── sandbox-playwright/
+        └── SKILL.md               ← teaches Claude Code to drive Playwright MCP + @playwright/test
 ```
 
 ## Workspace Directory Layout
