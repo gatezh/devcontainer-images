@@ -120,9 +120,9 @@ The sandbox firewall blocks vendor doc sites, so Claude Code can't `WebFetch` or
 
 Copy `.claude/skills/sandbox-fetch-docs/` into your project's `.claude/skills/` directory so Claude Code picks it up automatically.
 
-### Optional: Claude Code skill for Playwright
+### Recommended: Claude Code skill for Playwright
 
-Both image variants ship system chromium and the `/usr/local/bin/patch-playwright-mcp` binary, so Playwright MCP and `@playwright/test` work out of the box once a project's `playwright.config.ts` wires `launchOptions.executablePath` (see [Playwright Strategy](#playwright-strategy)). The image includes a [sandbox-playwright](.claude/skills/sandbox-playwright/SKILL.md) skill that teaches Claude Code how to drive both paths — discovery-driven, with no hardcoded project ports, service names, or test layouts.
+Both image variants ship system chromium and the `/usr/local/bin/patch-playwright-mcp` binary, so Playwright MCP and `@playwright/test` (and `@vitest/browser-playwright`, and direct `playwright-core` calls) work out of the box once each project entry point wires `launchOptions.executablePath` — see [Playwright Strategy](#playwright-strategy) for the full per-consumer wiring matrix. The image includes a [sandbox-playwright](.claude/skills/sandbox-playwright/SKILL.md) skill that teaches Claude Code how to drive these paths — discovery-driven, with no hardcoded project ports, service names, or test layouts.
 
 Copy `.claude/skills/sandbox-playwright/` into your project's `.claude/skills/` directory so Claude Code picks it up automatically.
 
@@ -240,20 +240,90 @@ The Dockerfile sets:
 ```bash
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium   # default target only
 ```
 
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` is a project convention — Playwright
-does **not** read it automatically. Each project's `playwright.config.ts`
-must honor it:
+does **not** read it automatically. Every Playwright entry point in your
+project must honor it. The image's job ends at "the env var points at the
+binary"; consumer projects do the wiring.
+
+| Consumer | Where to wire | What to add |
+|---|---|---|
+| `@playwright/mcp` | nothing (image-baked) | `/usr/local/bin/patch-playwright-mcp` rewrites every cached `.mcp.json` to use the system chromium. See [Playwright MCP plugin](#playwright-mcp-plugin) below. |
+| `@playwright/test` | `playwright.config.ts` | `use.launchOptions.executablePath` |
+| `@vitest/browser-playwright` (incl. `@storybook/addon-vitest`, `@vitest/browser`) | `vitest.config.ts` | `playwright({ launchOptions: { executablePath } })` |
+| Direct `playwright-core` / `playwright` use in scripts | every `chromium.launch(...)` site | `chromium.launch({ executablePath })` |
+| `agent-browser` (default target only) | nothing | Image sets `AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium`. Independent of the `PLAYWRIGHT_*` convention — agent-browser is a Rust CLI with its own env-var family. |
+
+### `@playwright/test` — `playwright.config.ts`
 
 ```ts
-// playwright.config.ts
+import { defineConfig } from "@playwright/test";
+
 export default defineConfig({
   use: {
     launchOptions: {
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
     },
   },
+});
+```
+
+In a monorepo, repeat this in every `playwright.config.ts` (one per service
+that has a Playwright suite). The same env-var value works for all.
+
+### `@vitest/browser-playwright` — `vitest.config.ts`
+
+The provider's options match the Playwright `LaunchOptions` interface
+verbatim under the `launchOptions` key (see the `PlaywrightProviderOptions`
+interface in `@vitest/browser-playwright`):
+
+```ts
+import { defineConfig, mergeConfig } from "vitest/config";
+import { playwright } from "@vitest/browser-playwright";
+import viteConfig from "./vite.config";
+
+export default mergeConfig(
+  viteConfig,
+  defineConfig({
+    test: {
+      browser: {
+        enabled: true,
+        headless: true,
+        provider: playwright({
+          launchOptions: {
+            executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+          },
+        }),
+        instances: [{ browser: "chromium" }],
+      },
+    },
+  }),
+);
+```
+
+For non-Vite projects, drop the `mergeConfig(viteConfig, …)` wrapper —
+`defineConfig({ test: { browser: { … } } })` works directly.
+
+**Symptom when this is missing:** `Executable doesn't exist at
+/home/node/.cache/ms-playwright/chromium_headless_shell-<rev>/chrome-linux/headless_shell`
+followed by a "Please run `npx playwright install`" message. **Don't follow
+that hint** — wire `launchOptions.executablePath` instead. Running `npx
+playwright install` would re-download the bundled binary the image
+deliberately avoids.
+
+### Direct `playwright-core` / `playwright` use
+
+For CI scripts, custom E2E that doesn't use `@playwright/test`, or codegen
+sites that import `chromium` directly:
+
+```ts
+import { chromium } from "playwright-core"; // or "playwright"
+
+const browser = await chromium.launch({
+  executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+  headless: true,
 });
 ```
 

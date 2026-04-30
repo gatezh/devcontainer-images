@@ -187,11 +187,16 @@ USER node
 # Avoids version coupling between @playwright/mcp (alpha playwright-core builds)
 # and cached browser binaries. Projects using @playwright/test must point their
 # playwright.config.ts at process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH.
+# AGENT_BROWSER_EXECUTABLE_PATH points agent-browser at the same binary —
+# agent-browser is a Rust CLI with its own env-var convention, NOT Playwright,
+# so PLAYWRIGHT_* vars are silently ignored. Without this, agent-browser would
+# auto-detect or attempt a Chrome-for-Testing download on first use.
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
-    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium \
+    AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # agent-browser: headless browser automation for AI agents.
-# Uses the apt-installed chromium above.
+# Uses the apt-installed chromium above (via AGENT_BROWSER_EXECUTABLE_PATH).
 # Installed as the node user (see claude-code install above for rationale).
 ARG AGENT_BROWSER_VERSION=latest
 RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION}

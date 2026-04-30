@@ -9,31 +9,39 @@ metadata:
 
 # Playwright in This Sandbox
 
-Playwright is reachable through **two independent paths**:
+Playwright is reachable through **multiple independent paths**, any combination of which a project may use:
 
 - **MCP plugin** (`playwright@claude-plugins-official`) — interactive, ad-hoc browser work.
 - **`@playwright/test` CLI** — the project's scripted E2E suite.
+- **`@vitest/browser-playwright`** — vitest browser mode (used by `@storybook/addon-vitest` for storybook interaction tests, by `@vitest/browser` for browser-mode unit tests).
+- **Direct `playwright-core` / `playwright`** — custom scripts that import `chromium` and call `chromium.launch(...)` themselves (CI scrapers, codegen).
 
 Don't install anything. Don't spawn a dev server — the user keeps one running on a port they chose.
 
-## Two paths — pick the right one
+## Pick the right path
 
 | Goal | Use | How |
 |---|---|---|
 | Ad-hoc: "does this button work?", "take a screenshot" | **MCP plugin** | `ToolSearch` → `browser_navigate` → `browser_snapshot` / `browser_click` |
-| Reproducible test suite | **Project CLI** | `bun run test:e2e` (whatever the script in the project's `package.json` is) |
+| Reproducible E2E suite | **`@playwright/test` CLI** | `bun run test:e2e` (whatever the script in the project's `package.json` is) |
+| Storybook interaction tests / vitest browser tests | **`@vitest/browser-playwright`** | The project's `vitest`/`storybook` test script (e.g. `bun run test`, `bun run test-storybook`). Config lives in `vitest.config.ts`, NOT `playwright.config.ts`. |
+| Custom script with `chromium.launch(...)` | **Direct** | Run the script as the project does. Requires `executablePath` wired at the call site (image-set env var). |
 
 ## Discovery first — never hardcode
 
 Every concrete fact in this section must come from the project at invocation time, not from this skill's prose. Stale skills are worse than missing ones.
 
-1. **Find the Playwright config.** RTK rewrites `find` and rejects compound predicates (`-not`, `! -path`), so use plain `find` and filter with `grep` — works whether RTK is in the loop or not.
+1. **Find the relevant config.** RTK rewrites `find` and rejects compound predicates (`-not`, `! -path`, also `\( … -o … \)` grouping), so use plain single-predicate `find` and filter with `grep` — works whether RTK is in the loop or not.
    ```sh
+   # For E2E ("run the e2e suite"):
    find . -maxdepth 6 -name 'playwright.config.*' | grep -v node_modules
+   # For storybook / vitest browser tests:
+   find . -maxdepth 6 -name 'vitest.config.*' | grep -v node_modules
    ```
-   - 0 matches → tell the user there's no e2e suite. Stop.
-   - 1 match → use it.
-   - 2+ matches → ask which one (a monorepo can ship one config per service, e.g. one for the React app, one for the marketing site).
+   - 0 `playwright.config.*` matches AND the user asked for E2E → tell them there's no Playwright E2E suite. Stop.
+   - 0 `vitest.config.*` matches with `test.browser.enabled = true` AND the user asked for storybook/vitest browser tests → tell them browser-mode isn't configured. Stop.
+   - 2+ matches of the same kind → ask which one (a monorepo can ship one config per service, e.g. one for the React app, one for the marketing site).
+   - Note: a plain unit-test `vitest.config.*` (no `test.browser.enabled`) doesn't drive Playwright — read the file to confirm browser mode is on before assuming.
 
 2. **Read the config.** Note `testDir`, the entries in `projects[]` (with their `testMatch` / `testIgnore` patterns — they are usually regexes, not filename allowlists), and `webServer` (its `url` and `reuseExistingServer`).
 
@@ -83,6 +91,7 @@ All tools are registered with the prefix `mcp__plugin_playwright_playwright__`.
 | `bun add @playwright/test` or any "reinstall Playwright" attempt | Already installed. Reinstalling risks an unintended version bump and violates the "no unauthorized installs" rule in the project's CLAUDE.md. |
 | Spawn your own `bun run dev` | The user keeps one running; Playwright's `webServer` reuses it (`reuseExistingServer: true`). A duplicate port-collides. |
 | Hardcode a port (`5173`, `5179`, etc.) in URLs, examples, or docs | Discover it per Step 3. Different projects use different env-var conventions (`APP_PORT`, `PORT`, `VITE_PORT`, …) and the user may override the default. |
+| Run `npx playwright install` when a Vitest/Storybook test fails with `Executable doesn't exist at /home/node/.cache/ms-playwright/...` | The image deliberately ships system Chromium at `/usr/bin/chromium` and sets `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`. The fix is to wire `launchOptions.executablePath` in `vitest.config.ts` (`provider: playwright({ launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } })`), not to download a Playwright-managed binary. |
 | Call `mcp__plugin_playwright_playwright__browser_*` without `ToolSearch` first | Deferred tools — raw invocation returns `InputValidationError` because the parameter schema hasn't been loaded. |
 | Navigate to non-localhost, non-GitHub, non-npm URLs and expect them to work | The devcontainer firewall (see `.claude/rules/devcontainer.md`) blocks arbitrary external domains. Localhost is fine. |
 | Chain actions without re-observing | Page state is implicit. Re-`browser_snapshot` or `browser_wait_for` between interactions. |
@@ -92,14 +101,22 @@ All tools are registered with the prefix `mcp__plugin_playwright_playwright__`.
 
 - "Playwright isn't available in this sandbox / devcontainer"
 - "I need to install Playwright first"
+- "Let me run `npx playwright install`" (the bundled binary is deliberately not used; wire `launchOptions.executablePath` instead)
 - "Let me start a dev server on :<some-port>" — you don't know the user's port
 - "I'll use `WebFetch` to check the rendered page instead"
 
 All mean: do the discovery in §"Discovery first", then follow the interactive or scripted workflow above. If the dev server isn't running, ask the user to start it — don't start one yourself.
 
-## How the MCP plugin is wired here
+## How Playwright is wired here
 
-For maintainers reading this: the upstream devcontainer image (`gatezh/devcontainers` claude-code, both `default` and `sandbox` targets) ships system chromium at `/usr/bin/chromium` and sets `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` + `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium`. Playwright doesn't read that env var on its own — it's a project convention — so:
+For maintainers reading this: the upstream devcontainer image (`gatezh/devcontainers` claude-code, both `default` and `sandbox` targets) ships system chromium at `/usr/bin/chromium` and sets:
 
-- The project's `playwright.config.ts` files wire it via `launchOptions.executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` so `playwright test` (or whatever the project's test script wraps) finds the binary.
-- `@playwright/mcp` defaults to the `chrome` channel (Google Chrome stable at `/opt/google/chrome/chrome`), which isn't installed. The bundled `.mcp.json` is rewritten by `/usr/local/bin/patch-playwright-mcp` (baked into the image) to launch with `--browser chromium --executable-path /usr/bin/chromium --no-sandbox --headless`. It runs from `init-plugins.sh` (postCreate) AND from `postStartCommand` so plugin auto-updates between sessions don't leave fresh cache dirs unpatched. See gatezh/devcontainers#85, #87.
+- `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` — keeps `npm install` from downloading bundled browsers.
+- `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium` — project convention; Playwright doesn't read it automatically, so each consumer of `@playwright/test`, `@vitest/browser-playwright`, or direct `playwright-core` use must pass it explicitly through `launchOptions.executablePath`.
+- `AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium` (default target only) — `agent-browser` is a Rust CLI with its own env-var family; without this it would auto-detect or attempt a Chrome-for-Testing download on first use.
+
+Beyond those env vars:
+
+- The project's `playwright.config.ts` files wire `launchOptions.executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` so `playwright test` finds the binary.
+- The project's `vitest.config.ts` (if it uses `@vitest/browser-playwright`, which `@storybook/addon-vitest` does) wires `provider: playwright({ launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } })`.
+- `@playwright/mcp` defaults to the `chrome` channel (Google Chrome stable at `/opt/google/chrome/chrome`), which isn't installed. The bundled `.mcp.json` is rewritten by `/usr/local/bin/patch-playwright-mcp` (baked into the image) to launch with `--browser chromium --executable-path /usr/bin/chromium --no-sandbox --headless`. It runs from `init-plugins.sh` (postCreate) AND from `postStartCommand` so plugin auto-updates between sessions don't leave fresh cache dirs unpatched. See gatezh/devcontainers#85, #87, #91.
