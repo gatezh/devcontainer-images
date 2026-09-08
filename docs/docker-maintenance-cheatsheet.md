@@ -157,8 +157,28 @@ recreates the disk and destroys all volumes — back up first.
 }
 ```
 
-`local` rotates and compresses; the default `json-file` grows unbounded.
-Requires a Docker restart, and applies to newly created containers.
+Every line a container writes to stdout/stderr is stored on disk, and the default
+`json-file` driver **never rotates unless you tell it to** — its `max-size`
+defaults to `-1` (unlimited) with `max-file: 1`. A chatty dev server or a
+database logging every query grows that file forever, and it shows up nowhere in
+`docker system df`.
+
+| | `json-file` (default) | `local` |
+|---|---|---|
+| Rotation | none (`max-size: -1`, `max-file: 1`) | 20 MB × 5 files |
+| Compression | no | yes, by default |
+| Cap per container | unbounded | ~100 MB |
+
+`docker logs` works normally with `local`. Docker's docs do *not* state a
+preference between the two drivers, so this is a better-defaults choice rather
+than an official recommendation — the equally valid alternative is keeping
+`json-file` and adding `"log-opts": {"max-size": "10m", "max-file": "3"}`, which
+preserves compatibility if anything ever parses the raw JSON log files. With
+`local`, don't: Docker warns those files "are designed to be exclusively
+accessed by the Docker daemon".
+
+Requires a Docker restart, and applies only to **newly created** containers — so
+the cheapest moment to change it is right after a reset, when none exist.
 
 ---
 
