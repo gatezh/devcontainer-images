@@ -3,11 +3,10 @@ name: CI
 on:
   pull_request:
     branches: [master]
-    paths:
-      - '**/Dockerfile'
-      - '**/*.sh'
-      - '.github/workflows/**'
-      - '.hadolint.yaml'
+    # Deliberately unfiltered: "CI complete" below is the required status check
+    # for master, and a required check that never runs blocks a PR forever -- a
+    # docs-only PR would deadlock. Image builds are still skipped per-image via
+    # detect-changes; the always-on jobs are lint-only and take seconds.
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -194,3 +193,29 @@ jobs:
           IMAGE_TAG: ${{ matrix.image }}:test
           VERIFY_CMD: ${{ matrix.verify }}
         run: docker run --rm --entrypoint sh "$IMAGE_TAG" -c "$VERIFY_CMD"
+
+  # -- Single required status check for branch protection ------------------
+  # Aggregates every job above so master needs exactly one required check.
+  # Passes when each job succeeded or was legitimately skipped (path-filtered
+  # builds), and fails if any job failed or was cancelled.
+  ci-complete:
+    name: CI complete
+    if: always()
+    needs: [lint-dockerfiles, lint-workflows, detect-changes, build-and-verify]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results of all CI jobs
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success | skipped) ;;
+              *)
+                echo "::error::A CI job finished with result '$result'"
+                exit 1
+                ;;
+            esac
+          done
+          echo "All CI jobs passed or were skipped."

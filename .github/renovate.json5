@@ -29,11 +29,15 @@
     },
     {
       // Group the four tools into one PR and auto-merge once CI passes.
-      // platformAutomerge:false => Renovate performs the merge itself only
-      // after it observes the branch tests are green, so CI gating needs no
-      // branch-protection rule. (Optional hardening: enable branch protection
-      // requiring the CI checks and set platformAutomerge:true for native
-      // GitHub auto-merge.)
+      // platformAutomerge:true => GitHub's native auto-merge merges the PR as
+      // soon as the required checks go green, with no further Renovate run
+      // needed. That is load-bearing here: @anthropic-ai/claude-code ships ~2
+      // releases/day, so with platformAutomerge:false every Renovate run found a
+      // newer version, force-pushed the branch (resetting CI to pending) and
+      // ended seconds later -- no run ever observed a green branch, and nothing
+      // was ever merged (#121 sat open and green for 3.5 weeks).
+      // Requires: repo setting "Allow auto-merge" enabled, and branch protection
+      // on master requiring the "CI complete" check (.github/workflows/ci.yml).
       matchPackageNames: [
         'rtk-ai/rtk',
         'umputun/ralphex',
@@ -42,7 +46,7 @@
       ],
       groupName: 'devcontainer agent tools',
       automerge: true,
-      platformAutomerge: false,
+      platformAutomerge: true,
     },
   ],
 }
