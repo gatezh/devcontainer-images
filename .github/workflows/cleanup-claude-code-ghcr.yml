@@ -1,7 +1,8 @@
 # Manually-triggered cleanup of old GHCR versions for the claude-code images.
 #
-# Scope: ghcr.io/gatezh/devcontainers/claude-code and
-#        ghcr.io/gatezh/devcontainers/claude-code-sandbox only.
+# Scope: ghcr.io/gatezh/devcontainers/claude-code,
+#        ghcr.io/gatezh/devcontainers/claude-code-sandbox and
+#        ghcr.io/gatezh/devcontainers/claude-code-happy only.
 # Other packages in this repo (bun, hugo-bun, hugo-bun-node, ralphex-fe,
 # claude-bun) are unreachable from this workflow.
 #
@@ -36,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [claude-code, claude-code-sandbox]
+        package: [claude-code, claude-code-sandbox, claude-code-happy]
     steps:
       - name: Delete old container versions
         uses: dataaxiom/ghcr-cleanup-action@v1

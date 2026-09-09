@@ -187,19 +187,6 @@ USER node
 ARG CLAUDE_CODE_VERSION=2.1.266
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
-# ── happy CLI (remote control for Claude Code) ────────────────────────────────
-# happy.engineering lets the Happy phone/web app start and drive Claude Code
-# sessions inside the container. Only the CLI is baked in; the daemon is opt-in
-# per project (compose `command:` + a volume for ~/.happy — see README
-# "Optional: remote control with happy"). Nothing runs unless a project asks.
-# Installed in the base stage so both targets get it; as the node user for the
-# same ownership reason as Claude Code above.
-# Pinned: the daemon restarts itself whenever the installed version changes, so
-# a floating install would turn every rebuild into a surprise restart.
-# renovate: datasource=npm depName=happy
-ARG HAPPY_VERSION=1.2.3
-RUN npm install -g happy@${HAPPY_VERSION}
-
 # ─── DEFAULT — full dev environment ───────────────────────────────────────────
 FROM base AS default
 
@@ -291,6 +278,60 @@ LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainers" 
       org.opencontainers.image.description="Claude Code devcontainer — network-restricted sandbox with firewall packages" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.title="claude-code-sandbox" \
+      org.opencontainers.image.url="https://github.com/gatezh/devcontainers"
+
+CMD ["sleep", "infinity"]
+
+# ─── HAPPY — default plus the happy CLI for phone/web remote control ──────────
+# Its own target rather than part of `base`, for two reasons:
+#
+#   Size. happy adds ~785 MB on top of `default` even after the trimming below
+#   (1844 MB -> 2629 MB, +43%). ~850 MB of that is upstream packaging we cannot
+#   influence: happy vendors its own copy of @anthropic-ai/claude-agent-sdk and
+#   sandbox-runtime (duplicating the claude-code install in `base`, and dragging
+#   in its Bedrock/Vertex/OpenTelemetry fan-out), and it ships the self-hostable
+#   happy server — fastify, http-proxy, expo-server-sdk, drizzle-orm, libsql —
+#   in the same npm package as the CLI. Projects that never pair a phone should
+#   not carry that.
+#
+#   Reachability. The daemon needs egress to happy's relay, which the `sandbox`
+#   firewall blocks by default. Building on `default` keeps the network-
+#   restricted image free of a tool it cannot use.
+#
+# Consume it by pointing devcontainer.json at
+# ghcr.io/gatezh/devcontainers/claude-code-happy instead of .../claude-code.
+FROM default AS happy
+
+# happy.engineering lets the Happy phone/web app start and drive Claude Code
+# sessions inside the container. Only the CLI is installed; the daemon is opt-in
+# per project (compose `command:` + a volume for ~/.happy — see README
+# "Optional: remote control with happy"). Nothing runs unless a project asks.
+# Installed as the node user for the same ownership reason as Claude Code above.
+#
+# Pinned: the daemon restarts itself whenever the installed version changes, so
+# a floating install would turn every rebuild into a surprise restart. The pin
+# also guards against the npm name transfer — this package was renamed from
+# `happy-coder` and the old name is still published, so never relax it to a
+# range. Renovate bumps it under the 3-day soak (see .github/renovate.json5).
+#
+# Two cleanups inside the same RUN, so the bytes never enter a layer:
+#   tools/archives — happy ships prebuilt difftastic + ripgrep tarballs for all
+#     six platform/arch combos (106 MB). Its postinstall unpacks only this
+#     platform's pair into tools/unpacked, which is where the runtime resolves
+#     difft and rg from; the archives are dead weight afterwards. (This is also
+#     why --ignore-scripts is not an option: it would leave tools/unpacked empty
+#     and silently break happy's diffing.)
+#   npm cache — 680 MB of tarballs. A later layer cannot reclaim it.
+# renovate: datasource=npm depName=happy
+ARG HAPPY_VERSION=1.2.3
+RUN npm install -g happy@${HAPPY_VERSION} \
+  && rm -rf "${NPM_CONFIG_PREFIX}/lib/node_modules/happy/tools/archives" \
+  && npm cache clean --force
+
+LABEL org.opencontainers.image.source="https://github.com/gatezh/devcontainers" \
+      org.opencontainers.image.description="Claude Code devcontainer — full dev environment plus the happy CLI for phone/web remote control" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.title="claude-code-happy" \
       org.opencontainers.image.url="https://github.com/gatezh/devcontainers"
 
 CMD ["sleep", "infinity"]

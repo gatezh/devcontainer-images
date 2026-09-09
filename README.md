@@ -6,7 +6,7 @@ This repository contains Dockerfiles for custom Docker images hosted on GitHub C
 
 ### Devcontainer Images
 
-- **[claude-code](./claude-code/README.md)** - Shared Claude Code devcontainer image (default + sandbox variants)
+- **[claude-code](./claude-code/README.md)** - Shared Claude Code devcontainer image (default + sandbox + happy variants)
 - **[bun](./bun/README.md)** - Bun development container
 - **[claude-bun](./claude-bun/README.md)** - Claude Code development container with firewall sandbox
 - **[hugo-bun](./hugo-bun/README.md)** - Hugo Extended + Bun development container
@@ -40,7 +40,7 @@ image-name/
 
 ### claude-code
 
-Shared devcontainer base image for Claude Code projects. Two variants from a single multi-stage Dockerfile: **default** (full dev environment with agent-browser) and **sandbox** (network-restricted with iptables firewall). Projects consume pre-built images and control tool versions via `.mise.toml`. Rebuilds when its pinned tools receive a new release (managed by Renovate), not on a schedule.
+Shared devcontainer base image for Claude Code projects. Three variants from a single multi-stage Dockerfile: **default** (full dev environment with agent-browser), **sandbox** (network-restricted with iptables firewall), and **happy** (default plus the happy CLI for phone/web remote control). Projects consume pre-built images and control tool versions via `.mise.toml`. Rebuilds when its pinned tools receive a new release (managed by Renovate), not on a schedule.
 
 **Usage in other projects:**
 
@@ -54,6 +54,12 @@ Shared devcontainer base image for Claude Code projects. Two variants from a sin
 {
   "image": "ghcr.io/gatezh/devcontainers/claude-code-sandbox:latest",
   "capAdd": ["NET_ADMIN", "NET_RAW"]
+}
+
+// Happy variant — default plus the happy CLI. ~785 MB larger than default,
+// so only worth pulling if you actually pair a phone or the web app.
+{
+  "image": "ghcr.io/gatezh/devcontainers/claude-code-happy:latest"
 }
 ```
 
@@ -155,7 +161,7 @@ Images from this repository are built and published to GitHub Container Registry
 ### Automatically, via Renovate
 
 The agent tooling in the `claude-code` and `ralphex-fe` images — `rtk`, `ralphex`, the Claude Code
-CLI, `happy`, and `agent-browser` — is pinned as `ARG`s carrying `# renovate:` annotations. Renovate watches
+CLI, `agent-browser`, and `happy` — is pinned as `ARG`s carrying `# renovate:` annotations. Renovate watches
 their releases and opens a single grouped bump PR when one ships; CI verifies it, it auto-merges, and
 that merge rebuilds the affected images. No upstream release means no PR and no rebuild. Scope and
 grouping live in [`.github/renovate.json5`](./.github/renovate.json5); the Dependency Dashboard

@@ -67,9 +67,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+  build-happy:
+    uses: docker/github-builder/.github/workflows/build.yml@v1
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    with:
+      output: image
+      push: true
+      target: happy
+      context: claude-code/.devcontainer
+
+      platforms: linux/amd64,linux/arm64
+      meta-images: ghcr.io/gatezh/devcontainers/claude-code-happy
+      meta-tags: |
+        type=raw,value=latest
+        type=sha,prefix=
+        type=raw,value={{date 'YYYYMMDD'}}
+    secrets:
+      registry-auths: |
+        - registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
   verify:
     name: Verify ${{ matrix.image-suffix }} (${{ matrix.arch }})
-    needs: [build-default, build-sandbox]
+    needs: [build-default, build-sandbox, build-happy]
     strategy:
       fail-fast: false
       matrix:
@@ -88,6 +112,14 @@ jobs:
             arch: amd64
           - image-suffix: claude-code-sandbox
             verify-command: "claude --version && mise --version && fish --version && which iptables && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp"
+            runner: ubuntu-24.04-arm
+            arch: arm64
+          - image-suffix: claude-code-happy
+            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium && npm ls -g --depth=0 happy"
+            runner: ubuntu-24.04
+            arch: amd64
+          - image-suffix: claude-code-happy
+            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium && npm ls -g --depth=0 happy"
             runner: ubuntu-24.04-arm
             arch: arm64
     runs-on: ${{ matrix.runner }}
