@@ -28,6 +28,26 @@ Dockerfiles for custom devcontainer images on GitHub Container Registry (ghcr.io
 - Standalone: `{primary-version}` only (e.g., `0.11.0`)
 - Multi-tool images: `{tool1}{version}-{tool2}{version}` (e.g., `bun1.3.9-hugo0.156.0`)
 
+## Where Documentation Goes
+
+**If a document goes stale when this repo's code changes, it belongs in the repo. If it goes stale when an external system changes — Docker Desktop, GitHub settings, an upstream tool — or it spans several images, it belongs in the [wiki](https://github.com/gatezh/devcontainers/wiki).**
+
+| In the repo | |
+|---|---|
+| Per-image `README.md` | A tag list or tool table must change in the same commit as its Dockerfile |
+| `.claude/CLAUDE.md`, `.claude/rules/*` | Conventions enforced in review |
+| `.github/workflows/README.md` | Describes the workflows beside it |
+| `docs/plans/`, `docs/superpowers/` | Planning and design artifacts |
+
+| In the wiki | |
+|---|---|
+| Cross-image guides | Belong to no single image |
+| Host / Docker Desktop procedures | Track Docker, not this repo |
+| GitHub settings runbooks | Configuration that can't be reviewed in a PR |
+| Incident writeups | Operational history, not code |
+
+Never duplicate: wiki pages link to READMEs, READMEs link back. Every wiki page ends with a `## Sources` section citing the PRs/issues it came from and a `*Last verified:*` date.
+
 ## Code Style
 
 - 2-space indentation in JSON/YAML
