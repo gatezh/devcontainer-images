@@ -62,19 +62,29 @@ jobs:
         uses: dorny/paths-filter@v4
         id: filter
         with:
+          # Each image also watches .github/verify-commands.json: editing a
+          # verify command should re-run it against a real image, not sit
+          # unexercised until the next Dockerfile change. A manifest edit
+          # therefore rebuilds every image — rare enough to be worth it.
           filters: |
             bun:
               - 'bun/**'
+              - '.github/verify-commands.json'
             claude-bun:
               - 'claude-bun/**'
+              - '.github/verify-commands.json'
             claude-code:
               - 'claude-code/**'
+              - '.github/verify-commands.json'
             hugo-bun:
               - 'hugo-bun/**'
+              - '.github/verify-commands.json'
             hugo-bun-node:
               - 'hugo-bun-node/**'
+              - '.github/verify-commands.json'
             ralphex-fe:
               - 'ralphex-fe/**'
+              - '.github/verify-commands.json'
 
       - name: Build matrix from changes
         id: set-matrix
@@ -88,8 +98,17 @@ jobs:
         run: |
           INCLUDES="[]"
 
+          # Verify commands live in .github/verify-commands.json so that this
+          # workflow and build-claude-code.yml cannot drift apart. Looking the
+          # command up here (rather than passing it in) means an image added
+          # without an entry fails the job instead of silently verifying nothing.
           add_image() {
-            local image="$1" context="$2" dockerfile="$3" verify="$4" target="${5:-}"
+            local image="$1" context="$2" dockerfile="$3" target="${4:-}"
+            local verify
+            verify=$(jq -er --arg k "$image" '.[$k]' .github/verify-commands.json) || {
+              echo "::error::no verify command for '$image' in .github/verify-commands.json"
+              exit 1
+            }
             INCLUDES=$(echo "$INCLUDES" | jq -c \
               --arg img "$image" \
               --arg ctx "$context" \
@@ -102,54 +121,46 @@ jobs:
           if [ "$CHANGED_BUN" = "true" ]; then
             add_image "bun" \
               "bun/.devcontainer" \
-              "bun/.devcontainer/Dockerfile" \
-              "bun --version"
+              "bun/.devcontainer/Dockerfile"
           fi
 
           if [ "$CHANGED_CLAUDE_BUN" = "true" ]; then
             add_image "claude-bun" \
               "claude-bun/.devcontainer" \
-              "claude-bun/.devcontainer/Dockerfile" \
-              "bun --version"
+              "claude-bun/.devcontainer/Dockerfile"
           fi
 
           if [ "$CHANGED_CLAUDE_CODE" = "true" ]; then
             add_image "claude-code" \
               "claude-code/.devcontainer" \
               "claude-code/.devcontainer/Dockerfile" \
-              "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium" \
               "default"
             add_image "claude-code-sandbox" \
               "claude-code/.devcontainer" \
               "claude-code/.devcontainer/Dockerfile" \
-              "claude --version && mise --version && fish --version && which iptables && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp" \
               "sandbox"
             add_image "claude-code-happy" \
               "claude-code/.devcontainer" \
               "claude-code/.devcontainer/Dockerfile" \
-              "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium && npm ls -g --depth=0 happy" \
               "happy"
           fi
 
           if [ "$CHANGED_HUGO_BUN" = "true" ]; then
             add_image "hugo-bun" \
               "hugo-bun/.devcontainer" \
-              "hugo-bun/.devcontainer/Dockerfile" \
-              "bun --version && hugo version"
+              "hugo-bun/.devcontainer/Dockerfile"
           fi
 
           if [ "$CHANGED_HUGO_BUN_NODE" = "true" ]; then
             add_image "hugo-bun-node" \
               "hugo-bun-node/.devcontainer" \
-              "hugo-bun-node/.devcontainer/Dockerfile" \
-              "bun --version && hugo version && node --version"
+              "hugo-bun-node/.devcontainer/Dockerfile"
           fi
 
           if [ "$CHANGED_RALPHEX" = "true" ]; then
             add_image "ralphex-fe" \
               "ralphex-fe" \
-              "ralphex-fe/Dockerfile" \
-              "bun --version && hugo version && /srv/ralphex --version && rtk --version"
+              "ralphex-fe/Dockerfile"
           fi
 
           if [ "$INCLUDES" = "[]" ]; then

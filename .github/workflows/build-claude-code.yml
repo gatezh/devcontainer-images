@@ -99,31 +99,28 @@ jobs:
       matrix:
         include:
           - image-suffix: claude-code
-            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium"
             runner: ubuntu-24.04
             arch: amd64
           - image-suffix: claude-code
-            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium"
             runner: ubuntu-24.04-arm
             arch: arm64
           - image-suffix: claude-code-sandbox
-            verify-command: "claude --version && mise --version && fish --version && which iptables && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp"
             runner: ubuntu-24.04
             arch: amd64
           - image-suffix: claude-code-sandbox
-            verify-command: "claude --version && mise --version && fish --version && which iptables && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp"
             runner: ubuntu-24.04-arm
             arch: arm64
           - image-suffix: claude-code-happy
-            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium && npm ls -g --depth=0 happy"
             runner: ubuntu-24.04
             arch: amd64
           - image-suffix: claude-code-happy
-            verify-command: "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium && npm ls -g --depth=0 happy"
             runner: ubuntu-24.04-arm
             arch: arm64
     runs-on: ${{ matrix.runner }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:
@@ -131,7 +128,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # The command comes from .github/verify-commands.json, the same file
+      # ci.yml reads, so pull-request and post-publish checks cannot drift.
+      # Reading it into a shell variable also keeps the command out of the
+      # `run:` script that Actions expands, so nothing from the workflow
+      # context is interpolated into shell.
       - name: Verify image
+        env:
+          IMAGE: ${{ matrix.image-suffix }}
         run: |
-          docker pull ghcr.io/gatezh/devcontainers/${{ matrix.image-suffix }}:latest
-          docker run --rm ghcr.io/gatezh/devcontainers/${{ matrix.image-suffix }}:latest bash -c "${{ matrix.verify-command }}"
+          VERIFY=$(jq -er --arg k "$IMAGE" '.[$k]' .github/verify-commands.json) || {
+            echo "::error::no verify command for '$IMAGE' in .github/verify-commands.json"
+            exit 1
+          }
+          docker pull "ghcr.io/gatezh/devcontainers/${IMAGE}:latest"
+          docker run --rm "ghcr.io/gatezh/devcontainers/${IMAGE}:latest" bash -c "$VERIFY"

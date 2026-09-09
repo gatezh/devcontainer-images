@@ -1,0 +1,31 @@
+{
+  "$comment": [
+    "Single source of truth for post-build image verification, keyed by published",
+    "image name (ghcr.io/gatezh/devcontainers/<key>).",
+
+    "Read by .github/workflows/ci.yml (pull-request builds) and by",
+    ".github/workflows/build-claude-code.yml (post-publish verification). Before",
+    "this file the claude-code commands lived in both, in nine copies of three",
+    "unique strings, and #131 shipped an update to one file and not the other.",
+
+    "A command must be able to FAIL. Assert on something that is absent from an",
+    "image lacking the tool, and check that it does: a CLI that exits 0 whatever",
+    "you pass it verifies nothing. happy is the worked example — every one of its",
+    "subcommands exits 0, including unknown flags, so claude-code-happy asserts",
+    "the installed package with `npm ls -g` instead of running the binary.",
+
+    "The remaining build-*.yml workflows still pass their own verify-command to",
+    "reusable-docker-build.yml. Migrating them is mechanical but touches publish",
+    "pipelines this repo cannot exercise from a pull request, so it is deliberately",
+    "left for a change of its own."
+  ],
+
+  "bun": "bun --version",
+  "claude-bun": "bun --version",
+  "claude-code": "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium",
+  "claude-code-sandbox": "claude --version && mise --version && fish --version && which iptables && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp",
+  "claude-code-happy": "bun --version || true && claude --version && mise --version && fish --version && rtk --version && ralphex --version && test -x /usr/local/bin/patch-playwright-mcp && test -r /etc/claude-code/managed-settings.json && jq -r '.hooks.SessionStart[0].hooks[0].command' /etc/claude-code/managed-settings.json | grep -qx /usr/local/bin/patch-playwright-mcp && printenv AGENT_BROWSER_EXECUTABLE_PATH | grep -qx /usr/bin/chromium && npm ls -g --depth=0 happy",
+  "hugo-bun": "bun --version && hugo version",
+  "hugo-bun-node": "bun --version && hugo version && node --version",
+  "ralphex-fe": "bun --version && hugo version && /srv/ralphex --version && rtk --version"
+}
