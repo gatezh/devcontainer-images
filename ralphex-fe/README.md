@@ -21,9 +21,9 @@ This is a standalone image, not a devcontainer.
 | Ralphex | 1.6.0 (pinned) |
 | Git, ripgrep, jq, curl, wget | system |
 
-The pinned versions live as `ARG`s in the Dockerfile and are kept current by Renovate — see
-[Automatic Rebuilds](#automatic-rebuilds). Bun and Hugo are bumped manually via the
-`update-and-build-ralphex-fe.yml` workflow.
+All pinned versions live as `ARG`s in the Dockerfile and are kept current by Renovate — see
+[Automatic Rebuilds](#automatic-rebuilds). This image has no `mise`, so its Bun and Hugo are
+image-level versions rather than per-project ones; Renovate tracks them like everything else.
 
 ## Usage
 

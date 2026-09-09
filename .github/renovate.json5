@@ -61,5 +61,17 @@
       matchPackageNames: ['@anthropic-ai/claude-code'],
       minimumReleaseAge: null,
     },
+    {
+      // ralphex-fe bakes its toolchain into the image — it has no mise, and
+      // its published tag is literally bun<BUN>-hugo<HUGO>. So these are
+      // image-level versions, not per-project ones, and there is no other
+      // place to set them. Bun uses the npm datasource because oven-sh/bun
+      // tags releases as "bun-v1.4.2", which the github-releases extractVersion
+      // above does not strip.
+      matchPackageNames: ['bun', 'gohugoio/hugo'],
+      groupName: 'ralphex-fe toolchain',
+      automerge: true,
+      minimumReleaseAge: '3 days',
+    },
   ],
 }

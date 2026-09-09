@@ -1,6 +1,8 @@
+# renovate: datasource=npm depName=bun
 ARG BUN_VERSION=1.3.9
 ARG DOCKER_VERSION=29.3.0
 ARG GO_VERSION=1.24.4
+# renovate: datasource=github-releases depName=gohugoio/hugo
 ARG HUGO_VERSION=0.156.0
 
 # ═════════════════════════════════════════════════════════════════════════════
