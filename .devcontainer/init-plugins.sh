@@ -46,9 +46,11 @@ done
 
 # Initialize rtk global hook for Claude Code (auto-rewrite mode).
 # --hook-only: installs only the PreToolUse rewrite hook, no workspace artifacts.
-# WORKAROUND: RTK ≥0.36.0 added a GDPR telemetry consent prompt that hangs in
-# non-interactive environments. timeout + RTK_TELEMETRY_DISABLED work around it.
-# Remove when upstream fixes it: https://github.com/rtk-ai/rtk/issues/1307
+# RTK_TELEMETRY_DISABLED=1 is the supported opt-out, not a workaround: since
+# rtk-ai/rtk#2477 (v0.44.0+) it short-circuits the telemetry consent prompt that
+# would otherwise block on stdin here. rtk's own TTY check is not enough — a
+# devcontainer postCreateCommand gets a pseudo-TTY, so the prompt believes it is
+# interactive. timeout stays as a backstop against a future init-time hang.
 echo "Initializing rtk (token optimizer)..."
 RTK_TELEMETRY_DISABLED=1 timeout 10 rtk init -g --hook-only --auto-patch || {
     echo "Note: rtk init may have already been configured or rtk not available"
