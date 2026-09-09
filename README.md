@@ -183,42 +183,21 @@ issue tracks what is pending. Everything else — including base images and Bun/
 > Setting `mode` in `renovate.json5` cannot substitute for the Silent-mode toggle, because `dryRun`
 > takes precedence over `mode` and is admin-level.
 
-### Via GitHub UI
+### Manual rebuilds
 
-Some images have automated update workflows that allow you to update dependency versions without manually editing Dockerfiles:
-
-1. Go to **Actions** tab → Select the update workflow (e.g., "Update and Build ralphex-fe")
-2. Click **Run workflow**
-3. Enter new versions (e.g., Bun 1.4.0, Hugo 0.156.0)
-4. Click **Run workflow** button
-
-The workflow will:
-- Update the Dockerfile with new versions
-- Commit the changes to the repository
-- Build and push the updated image
-
-### Via GitHub CLI
-
-If you have the [GitHub CLI](https://cli.github.com/) installed, you can trigger updates from your terminal:
+Every image has a `workflow_dispatch` trigger, so a rebuild can be forced without a code change:
 
 ```bash
-# Update ralphex-fe image versions
-gh workflow run update-and-build-ralphex-fe.yml \
-  -f bun_version=1.4.0 \
-  -f hugo_version=0.156.0
+# Rebuild one image from current master
+gh workflow run build-ralphex-fe.yml
 
-# Update without building (just commit to repo)
-gh workflow run update-and-build-ralphex-fe.yml \
-  -f bun_version=1.4.0 \
-  -f hugo_version=0.156.0 \
-  -f update_only=true
-
-# Check workflow status
-gh run list --workflow=update-and-build-ralphex-fe.yml
-
-# Watch the latest run in real-time
+# Check status / watch
+gh run list --workflow=build-ralphex-fe.yml
 gh run watch
 ```
+
+To change a pinned version, edit the `ARG` in that image's Dockerfile and open a PR — the merge
+triggers the build. There is no longer a workflow that rewrites Dockerfiles and pushes to `master`.
 
 **Install GitHub CLI:**
 ```bash
