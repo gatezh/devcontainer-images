@@ -1,6 +1,6 @@
 # claude-code
 
-Shared devcontainer image for Claude Code development environments. Two variants from a single multi-stage Dockerfile: **default** (full dev environment) and **sandbox** (network-restricted).
+Shared devcontainer image for Claude Code development environments. Three variants from a single multi-stage Dockerfile: **default** (full dev environment), **sandbox** (network-restricted), and **happy** (default plus the happy CLI for phone/web remote control).
 
 Projects consume these pre-built images and control their own tool versions via `.mise.toml`.
 
@@ -10,6 +10,7 @@ Projects consume these pre-built images and control their own tool versions via 
 |---------|-------|----------|
 | **default** | `ghcr.io/gatezh/devcontainers/claude-code:latest` | Full dev environment with agent-browser and passwordless sudo |
 | **sandbox** | `ghcr.io/gatezh/devcontainers/claude-code-sandbox:latest` | Network-restricted environment with iptables firewall packages |
+| **happy** | `ghcr.io/gatezh/devcontainers/claude-code-happy:latest` | Default plus the [happy](https://happy.engineering) CLI, for driving Claude Code from the Happy phone/web app. ~785 MB larger than **default** — only worth pulling if you actually pair a device |
 
 ## What's Included
 
@@ -22,15 +23,17 @@ Projects consume these pre-built images and control their own tool versions via 
 | rtk, ralphex | Pinned `ARG`s, bumped by Renovate on each GitHub release | Dev infrastructure (like Claude Code) — the image tracks the versions so projects don't have to |
 | Claude Code | npm global install | npm avoids rate limiting that affects the native installer in parallel CI builds |
 
-**Both targets:** system Chromium + `fonts-freefont-ttf` (used by Playwright and the Playwright MCP plugin via `/usr/bin/chromium`)
+**All targets:** system Chromium + `fonts-freefont-ttf` (used by Playwright and the Playwright MCP plugin via `/usr/bin/chromium`)
 
 **Default-only:** passwordless sudo, agent-browser
+
+**Happy-only:** everything in **default**, plus the [happy.engineering](https://happy.engineering) CLI (npm global install, pinned `ARG` bumped by Renovate). CLI only; the daemon is opt-in per project — see [Optional: remote control with happy](#optional-remote-control-with-happy)
 
 **Sandbox-only:** iptables, ipset, iproute2, dnsutils, aggregate, firewall sudo rule
 
 ## Multi-platform Support
 
-Both variants are built for:
+All three variants are built for:
 - `linux/amd64` (x86_64)
 - `linux/arm64` (ARM64/Apple Silicon)
 
@@ -42,7 +45,7 @@ Both variants are built for:
 
 ## Automatic Rebuilds
 
-The image rebuilds automatically whenever one of its pinned tools — Claude Code, agent-browser, rtk, or ralphex — publishes a new release: Renovate opens a version-bump PR, CI verifies it, it auto-merges, and the merge builds the image on native runners for both amd64 and arm64 (no QEMU emulation). Manual rebuilds can be triggered via the "Run workflow" button in the Actions UI.
+The images rebuild automatically whenever one of the pinned tools — Claude Code, agent-browser, rtk, ralphex, or happy — publishes a new release: Renovate opens a version-bump PR, CI verifies it, it auto-merges, and the merge builds all three variants on native runners for both amd64 and arm64 (no QEMU emulation). Manual rebuilds can be triggered via the "Run workflow" button in the Actions UI.
 
 ## Quick Start
 
@@ -161,6 +164,29 @@ git add .claude/skills/devcontainer-upstream-sync/SKILL.md
 
 After the one-time copy, the skill manages its own updates.
 
+
+### Optional: remote control with happy
+
+The [happy.engineering](https://happy.engineering) CLI (`happy`) ships in **its own image variant**, not in `default` or `sandbox`:
+
+```yaml
+# .devcontainer/docker-compose.yml
+image: ghcr.io/gatezh/devcontainers/claude-code-happy:latest
+```
+
+It is a separate variant because it is expensive — ~785 MB on top of `default`, and roughly 850 MB of that is upstream packaging this repo cannot trim (happy vendors its own copy of the Claude Code agent SDK, and ships the self-hostable happy server in the same npm package as the CLI). Projects that never pair a device keep the smaller `default` image.
+
+Nothing runs by default even in this variant — the image `CMD` is still `sleep infinity`. To let the Happy phone/web app start Claude Code sessions in a project's container:
+
+1. **Persist the pairing.** happy keeps its credentials and machine id in `~/.happy` (`HAPPY_HOME_DIR` overrides). Add a named volume for `/home/node/.happy` next to the Claude config volume so pairing survives rebuilds.
+2. **Run the daemon as the container's main process.** Point the compose service `command:` at a script that runs `happy daemon start-sync` and restarts it when it exits, add `restart: unless-stopped`, and set `"shutdownAction": "none"` in `devcontainer.json` so closing VS Code does not stop the container. (`happy daemon start` is only a wrapper that spawns `start-sync` detached, so `start-sync` is the form a supervised main process wants.)
+3. **Pair once:** `docker compose exec devcontainer happy auth login`, then scan the QR code in the app. Start desk sessions with `happy claude` instead of `claude` so they show up in the app too.
+
+The daemon needs no inbound ports; it opens an outbound connection to happy's backend (`api.cluster-fluster.com` by default, `HAPPY_SERVER_URL` overrides). The daemon restarts itself when the installed happy version changes, so a Renovate bump plus image pull restarts running daemons on the next rebuild — that is why `HAPPY_VERSION` is pinned rather than floating.
+
+**Understand what pairing grants before you use this.** The relay is an inbound control channel: anyone holding the pairing can start and drive Claude Code sessions against your mounted workspace, and happy's bypass permission modes hand the agent `--dangerously-skip-permissions` with no per-tool approval prompt. Treat a pairing QR code like a credential, and prefer this variant on projects where that blast radius is acceptable.
+
+**Not available in the sandbox variant, deliberately.** The sandbox firewall blocks happy's relay, and allowlisting `api.cluster-fluster.com` in `init-firewall.sh` would punch a hole in exactly the egress restriction that variant exists to enforce — for a channel that can execute code in the container. If you need remote control, use the `happy` variant instead of loosening the sandbox.
 
 ### Sandbox Authentication
 
@@ -405,13 +431,19 @@ cat ~/.claude/plugins/cache/claude-plugins-official/playwright/*/.mcp.json
 | Arg | Default | Description |
 |-----|---------|-------------|
 | `GIT_DELTA_VERSION` | `0.18.2` | git-delta version |
-| `RTK_VERSION` | `0.43.0` | rtk version (Renovate-managed) |
-| `RALPHEX_VERSION` | `1.6.0` | ralphex version (Renovate-managed) |
-| `CLAUDE_CODE_VERSION` | `2.1.216` | Claude Code CLI version (Renovate-managed) |
-| `AGENT_BROWSER_VERSION` | `0.32.3` | agent-browser version, default target only (Renovate-managed) |
+| `RTK_VERSION` | see Dockerfile | rtk version (Renovate-managed) |
+| `RALPHEX_VERSION` | see Dockerfile | ralphex version (Renovate-managed) |
+| `CLAUDE_CODE_VERSION` | see Dockerfile | Claude Code CLI version (Renovate-managed) |
+| `HAPPY_VERSION` | see Dockerfile | happy.engineering CLI version, happy target only (Renovate-managed) |
+| `AGENT_BROWSER_VERSION` | see Dockerfile | agent-browser version, default target only (Renovate-managed) |
 
-The four Renovate-managed args carry `# renovate:` annotations in the Dockerfile; edit them by
+The five Renovate-managed args carry `# renovate:` annotations in the Dockerfile; edit them by
 hand only for a local build. Bumps land as auto-merged PRs — see [Automatic Rebuilds](#automatic-rebuilds).
+
+Their current values are deliberately not repeated here: Renovate rewrites the `ARG` lines on every
+release, so any copy in this table is stale within days. Read the pinned versions straight from
+[`.devcontainer/Dockerfile`](./.devcontainer/Dockerfile), or from a running container with
+`rtk --version`, `claude --version`, and so on.
 
 ## Building Locally / Local Fallback
 
