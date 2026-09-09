@@ -2,6 +2,8 @@
 
 This repository contains Dockerfiles for custom Docker images hosted on GitHub Container Registry (ghcr.io).
 
+**New here?** The [wiki](https://github.com/gatezh/devcontainers/wiki) has a [guide to picking an image](https://github.com/gatezh/devcontainers/wiki/Choosing-an-Image) and explains [what `latest` means and when it moves](https://github.com/gatezh/devcontainers/wiki/Image-Tags-and-Rebuild-Policy).
+
 ## 📚 Image Documentation
 
 ### Devcontainer Images
@@ -16,10 +18,16 @@ This repository contains Dockerfiles for custom Docker images hosted on GitHub C
 
 - **[ralphex-fe](./ralphex-fe/README.md)** - Bun + Hugo Extended on ralphex base (standalone image)
 
-### Maintenance
+## 📖 Guides (wiki)
 
-- **[Docker maintenance cheatsheet](./docs/docker-maintenance-cheatsheet.md)** - commands for "low disk space", a hung Docker, and safe cleanup
-- **[Why Docker fills the disk](./docs/disk-usage.md)** - what actually grows, why, and the settings that prevent an outage
+Cross-image guides and host-level procedures live in the [wiki](https://github.com/gatezh/devcontainers/wiki), because they go stale when Docker or GitHub changes rather than when this repo does.
+
+- **[Choosing an Image](https://github.com/gatezh/devcontainers/wiki/Choosing-an-Image)** - which of the six images you want
+- **[Image Tags and Rebuild Policy](https://github.com/gatezh/devcontainers/wiki/Image-Tags-and-Rebuild-Policy)** - what `latest` means, which tags are immutable, when rebuilds happen
+- **[Troubleshooting](https://github.com/gatezh/devcontainers/wiki/Troubleshooting)** - symptoms that span more than one image
+- **[Docker Disk Maintenance](https://github.com/gatezh/devcontainers/wiki/Docker-Disk-Maintenance)** - commands for "low disk space", a hung Docker, and safe cleanup
+- **[Incident: Docker Disk Exhaustion (2026-09-07)](https://github.com/gatezh/devcontainers/wiki/Incident-Docker-Disk-Exhaustion-2026-09-07)** - what actually grows, why, and the settings that prevent an outage
+- **[Branch Protection and Renovate Auto-Merge](https://github.com/gatezh/devcontainers/wiki/Branch-Protection-and-Renovate-Auto-Merge)** - maintainer runbook
 
 ## Repository Structure
 
