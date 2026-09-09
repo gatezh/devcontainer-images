@@ -29,11 +29,17 @@
     },
     {
       // Group the five tools into one PR and auto-merge once CI passes.
-      // platformAutomerge:false => Renovate performs the merge itself only
-      // after it observes the branch tests are green, so CI gating needs no
-      // branch-protection rule. (Optional hardening: enable branch protection
-      // requiring the CI checks and set platformAutomerge:true for native
-      // GitHub auto-merge.)
+      //
+      // Relies on Renovate's default platformAutomerge:true — GitHub's native
+      // auto-merge merges on green with no second Renovate run. The previous
+      // explicit platformAutomerge:false is what broke this: only a Renovate
+      // run could merge, and every run found a newer claude-code, force-pushed
+      // the branch and ended before CI finished (#121 sat green for 3.5 weeks).
+      //
+      // Requires: repo setting "Allow auto-merge", and a ruleset on master
+      // requiring the "CI complete" check (.github/workflows/ci.yml). Without
+      // that required check nothing blocks the PR, GitHub never offers native
+      // auto-merge, and Renovate silently falls back to the broken path.
       matchPackageNames: [
         'rtk-ai/rtk',
         'umputun/ralphex',
@@ -43,7 +49,18 @@
       ],
       groupName: 'devcontainer agent tools',
       automerge: true,
-      platformAutomerge: false,
+
+      // These bumps merge unreviewed and publish straight to ghcr.io, so let a
+      // release soak before adopting it. internalChecksFilter defaults to
+      // 'strict', so a too-young version is simply not offered yet — the group
+      // PR carries whichever tools are currently eligible.
+      minimumReleaseAge: '3 days',
+    },
+    {
+      // ...except claude-code, which is tracked at latest deliberately.
+      // Later packageRules win, so this clears the soak period above.
+      matchPackageNames: ['@anthropic-ai/claude-code'],
+      minimumReleaseAge: null,
     },
   ],
 }

@@ -3,11 +3,10 @@ name: CI
 on:
   pull_request:
     branches: [master]
-    paths:
-      - '**/Dockerfile'
-      - '**/*.sh'
-      - '.github/workflows/**'
-      - '.hadolint.yaml'
+    # Deliberately unfiltered: "CI complete" below is the required status check
+    # for master, and a required check that never runs blocks a PR forever -- a
+    # docs-only PR would deadlock. Image builds are still skipped per-image via
+    # detect-changes; the always-on jobs are lint-only and take seconds.
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -194,3 +193,52 @@ jobs:
           IMAGE_TAG: ${{ matrix.image }}:test
           VERIFY_CMD: ${{ matrix.verify }}
         run: docker run --rm --entrypoint sh "$IMAGE_TAG" -c "$VERIFY_CMD"
+
+  # -- Single required status check for branch protection ------------------
+  # Aggregates every job above so master needs exactly one required check.
+  # Passes when each job succeeded or was legitimately skipped (path-filtered
+  # builds), and fails if any job failed or was cancelled.
+  #
+  # Any job added to this workflow must also be added to `needs` below: this is
+  # the only required check on master and Renovate auto-merges on it, so an
+  # unwatched job would go red while the gate stayed green. The first step
+  # enforces that rather than trusting anyone to remember.
+  ci-complete:
+    name: CI complete
+    # always(), not !cancelled(): GitHub counts a *skipped* required check as
+    # passing, so !cancelled() would let a cancelled run report a green gate.
+    if: always()
+    needs: [lint-dockerfiles, lint-workflows, detect-changes, build-and-verify]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Verify every job is watched
+        env:
+          WATCHED: ${{ toJSON(needs) }}
+        run: |
+          missing=""
+          for job in $(yq '.jobs | keys | .[]' .github/workflows/ci.yml); do
+            [ "$job" = "ci-complete" ] && continue
+            jq -e --arg j "$job" 'has($j)' <<< "$WATCHED" > /dev/null || missing="$missing $job"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Jobs missing from ci-complete.needs:$missing"
+            exit 1
+          fi
+
+      - name: Check results of all CI jobs
+        env:
+          WATCHED: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$WATCHED"
+          bad=$(jq -r '
+            to_entries[]
+            | select(.value.result != "success" and .value.result != "skipped")
+            | "\(.key) (\(.value.result))"' <<< "$WATCHED")
+          if [ -n "$bad" ]; then
+            echo "::error::CI jobs did not pass: $(echo "$bad" | tr '\n' ' ')"
+            exit 1
+          fi
+          echo "All CI jobs passed or were skipped."
