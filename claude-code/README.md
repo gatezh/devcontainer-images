@@ -21,6 +21,7 @@ Projects consume these pre-built images and control their own tool versions via 
 | Mise | The tool manager itself (not the tools) | Projects run `mise install` at container creation for their tool versions |
 | rtk, ralphex | Pinned `ARG`s, bumped by Renovate on each GitHub release | Dev infrastructure (like Claude Code) — the image tracks the versions so projects don't have to |
 | Claude Code | npm global install | npm avoids rate limiting that affects the native installer in parallel CI builds |
+| happy | npm global install, pinned `ARG` bumped by Renovate | [happy.engineering](https://happy.engineering) CLI — lets the Happy phone/web app start Claude Code sessions in the container. CLI only; the daemon is opt-in per project |
 
 **Both targets:** system Chromium + `fonts-freefont-ttf` (used by Playwright and the Playwright MCP plugin via `/usr/bin/chromium`)
 
@@ -42,7 +43,7 @@ Both variants are built for:
 
 ## Automatic Rebuilds
 
-The image rebuilds automatically whenever one of its pinned tools — Claude Code, agent-browser, rtk, or ralphex — publishes a new release: Renovate opens a version-bump PR, CI verifies it, it auto-merges, and the merge builds the image on native runners for both amd64 and arm64 (no QEMU emulation). Manual rebuilds can be triggered via the "Run workflow" button in the Actions UI.
+The image rebuilds automatically whenever one of its pinned tools — Claude Code, happy, agent-browser, rtk, or ralphex — publishes a new release: Renovate opens a version-bump PR, CI verifies it, it auto-merges, and the merge builds the image on native runners for both amd64 and arm64 (no QEMU emulation). Manual rebuilds can be triggered via the "Run workflow" button in the Actions UI.
 
 ## Quick Start
 
@@ -161,6 +162,16 @@ git add .claude/skills/devcontainer-upstream-sync/SKILL.md
 
 After the one-time copy, the skill manages its own updates.
 
+
+### Optional: remote control with happy
+
+Both targets ship the [happy.engineering](https://happy.engineering) CLI (`happy`), pinned via `HAPPY_VERSION` and bumped by Renovate like the other agent tools. Nothing runs by default — the image `CMD` is still `sleep infinity`. To let the Happy phone/web app start Claude Code sessions in a project's container:
+
+1. **Persist the pairing.** happy keeps its credentials and machine id in `~/.happy` (`HAPPY_HOME_DIR` overrides). Add a named volume for `/home/node/.happy` next to the Claude config volume so pairing survives rebuilds.
+2. **Run the daemon as the container's main process.** Point the compose service `command:` at a script that runs `happy daemon start-sync` and restarts it when it exits, add `restart: unless-stopped`, and set `"shutdownAction": "none"` in `devcontainer.json` so closing VS Code does not stop the container.
+3. **Pair once:** `docker compose exec devcontainer happy auth login`, then scan the QR code in the app. Start desk sessions with `happy claude` instead of `claude` so they show up in the app too.
+
+The daemon needs no inbound ports; it opens an outbound connection to happy's backend (`api.cluster-fluster.com` by default, `HAPPY_SERVER_URL` overrides). **Sandbox:** add that host to your `init-firewall.sh` allowlist or the daemon cannot connect. The daemon restarts itself when the installed happy version changes, so a Renovate bump plus image pull restarts running daemons on the next rebuild — that is why the version is pinned rather than floating.
 
 ### Sandbox Authentication
 
@@ -408,9 +419,10 @@ cat ~/.claude/plugins/cache/claude-plugins-official/playwright/*/.mcp.json
 | `RTK_VERSION` | `0.43.0` | rtk version (Renovate-managed) |
 | `RALPHEX_VERSION` | `1.6.0` | ralphex version (Renovate-managed) |
 | `CLAUDE_CODE_VERSION` | `2.1.216` | Claude Code CLI version (Renovate-managed) |
+| `HAPPY_VERSION` | `1.2.3` | happy.engineering CLI version (Renovate-managed) |
 | `AGENT_BROWSER_VERSION` | `0.32.3` | agent-browser version, default target only (Renovate-managed) |
 
-The four Renovate-managed args carry `# renovate:` annotations in the Dockerfile; edit them by
+The five Renovate-managed args carry `# renovate:` annotations in the Dockerfile; edit them by
 hand only for a local build. Bumps land as auto-merged PRs — see [Automatic Rebuilds](#automatic-rebuilds).
 
 ## Building Locally / Local Fallback

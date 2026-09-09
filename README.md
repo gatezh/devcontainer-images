@@ -155,7 +155,7 @@ Images from this repository are built and published to GitHub Container Registry
 ### Automatically, via Renovate
 
 The agent tooling in the `claude-code` and `ralphex-fe` images — `rtk`, `ralphex`, the Claude Code
-CLI, and `agent-browser` — is pinned as `ARG`s carrying `# renovate:` annotations. Renovate watches
+CLI, `happy`, and `agent-browser` — is pinned as `ARG`s carrying `# renovate:` annotations. Renovate watches
 their releases and opens a single grouped bump PR when one ships; CI verifies it, it auto-merges, and
 that merge rebuilds the affected images. No upstream release means no PR and no rebuild. Scope and
 grouping live in [`.github/renovate.json5`](./.github/renovate.json5); the Dependency Dashboard

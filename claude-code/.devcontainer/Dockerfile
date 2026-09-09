@@ -187,6 +187,19 @@ USER node
 ARG CLAUDE_CODE_VERSION=2.1.266
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
+# ── happy CLI (remote control for Claude Code) ────────────────────────────────
+# happy.engineering lets the Happy phone/web app start and drive Claude Code
+# sessions inside the container. Only the CLI is baked in; the daemon is opt-in
+# per project (compose `command:` + a volume for ~/.happy — see README
+# "Optional: remote control with happy"). Nothing runs unless a project asks.
+# Installed in the base stage so both targets get it; as the node user for the
+# same ownership reason as Claude Code above.
+# Pinned: the daemon restarts itself whenever the installed version changes, so
+# a floating install would turn every rebuild into a surprise restart.
+# renovate: datasource=npm depName=happy
+ARG HAPPY_VERSION=1.2.3
+RUN npm install -g happy@${HAPPY_VERSION}
+
 # ─── DEFAULT — full dev environment ───────────────────────────────────────────
 FROM base AS default
 
