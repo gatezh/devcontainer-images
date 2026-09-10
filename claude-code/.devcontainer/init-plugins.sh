@@ -24,6 +24,7 @@ MARKETPLACES=(
     "umputun/ralphex"
     "GoogleChrome/modern-web-guidance"
     "AgriciDaniel/claude-seo"
+    "cloudflare/skills"
 )
 
 for marketplace in "${MARKETPLACES[@]}"; do
@@ -47,6 +48,11 @@ PLUGINS=(
     "claude-md-management@claude-plugins-official"
     "claude-code-setup@claude-plugins-official"
     "posthog@claude-plugins-official"
+    # cloudflare/skills is Cloudflare's own marketplace: current skills + MCP server.
+    # (The claude-plugins-official copy is a stale snapshot.) wrangler <4.126 also
+    # auto-installed a 3rd copy into ~/.claude/skills after any command; run
+    # `wrangler types` with CI=true in postinstall scripts to keep that quiet.
+    "cloudflare@cloudflare"
     "ralphex@ralphex"
     "modern-web-guidance@googlechrome"
     "claude-seo@agricidaniel-claude-seo"
